@@ -5,7 +5,7 @@ import remarkToc from 'remark-toc';
 import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeUrls from 'rehype-urls';
-import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
+import bundleAudioWorkletPlugin from '../packages/vite-plugin-bundle-audioworklet/vite-plugin-bundle-audioworklet.js';
 
 import tailwind from '@astrojs/tailwind';
 import AstroPWA from '@vite-pwa/astro';
