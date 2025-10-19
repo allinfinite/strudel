@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite';
-import { dependencies } from './package.json' assert { type: 'json' };
+import { createRequire } from 'module';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
 
+const require = createRequire(import.meta.url);
+const { dependencies } = require('./package.json');
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 // https://vitejs.dev/config/
