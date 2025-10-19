@@ -50,8 +50,18 @@ const currentPage = Astro.url.pathname;
       </div>
     </div>
 
+    <div class="mode-selector">
+      <label>Musical Mode:</label>
+      <div class="mode-buttons">
+        <button class="mode-btn active" data-mode="sparse">🌙 Sparse</button>
+        <button class="mode-btn" data-mode="melodic">🎵 Melodic</button>
+        <button class="mode-btn" data-mode="rhythmic">🥁 Rhythmic</button>
+        <button class="mode-btn" data-mode="structured">🎹 Structured</button>
+      </div>
+    </div>
+
     <div id="infoPanel" class="info-panel">
-      <div id="modeDisplay" class="mode-display mode-energetic">ENERGETIC</div>
+      <div id="modeDisplay" class="mode-display mode-sparse">SPARSE</div>
       <div class="stats">
         <div class="stat">
           <div class="stat-label">Brightness</div>
@@ -158,6 +168,56 @@ const currentPage = Astro.url.pathname;
       border-radius: 15px;
       padding: 20px;
       border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .mode-selector {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      margin: 10px 0;
+    }
+
+    .mode-selector label {
+      display: block;
+      font-size: 1em;
+      font-weight: bold;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .mode-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mode-btn {
+      padding: 12px 24px;
+      font-size: 1em;
+      font-weight: 600;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+
+    .mode-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      border-color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
     }
 
     .btn {
@@ -395,7 +455,7 @@ const currentPage = Astro.url.pathname;
         // Musical structure
         this.currentMusicMode = 'sparse';
         this.lastModeChange = 0;
-        this.modeChangeCooldown = 8000; // 8 seconds - longer cooldown for stability
+        this.modeChangeCooldown = 2000; // 2 seconds
         
         // Harmonic system
         this.currentKey = 'C';
@@ -419,6 +479,9 @@ const currentPage = Astro.url.pathname;
         this.saturationDisplay = document.getElementById('saturation');
         this.hueDisplay = document.getElementById('hue');
         
+        // Mode selector buttons
+        this.modeButtons = document.querySelectorAll('.mode-btn');
+        
         this.isInitialized = false;
         this.isPlaying = false;
         this.animationFrame = null;
@@ -433,6 +496,41 @@ const currentPage = Astro.url.pathname;
       setupEventListeners() {
         this.startBtn.addEventListener('click', () => this.start());
         this.stopBtn.addEventListener('click', () => this.stop());
+        
+        // Mode selector buttons
+        this.modeButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const newMode = btn.dataset.mode;
+            this.setMode(newMode);
+            
+            // Update active button
+            this.modeButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+          });
+        });
+      }
+      
+      setMode(mode) {
+        this.currentMusicMode = mode;
+        this.updateModeDisplay(mode);
+        
+        // Adjust beat intensity based on mode
+        switch (mode) {
+          case 'sparse':
+            this.beatIntensity = 0.2;
+            break;
+          case 'melodic':
+            this.beatIntensity = 0.4;
+            break;
+          case 'rhythmic':
+            this.beatIntensity = 0.8;
+            break;
+          case 'structured':
+            this.beatIntensity = 0.6;
+            break;
+        }
+        
+        console.log('🎵 Mode manually set to:', mode, '(beat intensity:', this.beatIntensity.toFixed(2), ')');
       }
       
       setupCanvas() {
@@ -669,9 +767,6 @@ const currentPage = Astro.url.pathname;
           if (this.metronomeEnabled) {
             this.playMetronome();
           }
-          
-          // Update mode
-          this.evaluateMusicMode();
           
         }, stepDuration);
         
@@ -1179,58 +1274,8 @@ const currentPage = Astro.url.pathname;
         }
       }
       
-      evaluateMusicMode() {
-        const now = Date.now();
-        
-        // Update beat intensity continuously based on motion
-        const currentValues = this.getCurrentWebcamValues();
-        if (currentValues) {
-          const motionVal = currentValues.motion / 100;
-          // Smoothly adjust beat intensity based on motion
-          this.beatIntensity = 0.2 + motionVal * 0.6; // Range from 0.2 (still) to 0.8 (moving)
-        }
-        
-        // Only change mode after cooldown
-        if (now - this.lastModeChange < this.modeChangeCooldown) return;
-        
-        if (!currentValues) return;
-        
-        const { motion, saturation, brightness } = currentValues;
-        const motionVal = motion / 100;
-        const saturationVal = saturation / 100;
-        
-        let newMode = this.currentMusicMode;
-        
-        // Mode switching logic with hysteresis to prevent rapid changes
-        // Add 0.1 buffer when transitioning OUT of a mode
-        const buffer = 0.1;
-        
-        if (motionVal < 0.1 && saturationVal < 0.2) {
-          newMode = 'sparse';
-        } else if (motionVal > 0.7) {
-          // Higher threshold to enter rhythmic
-          newMode = 'rhythmic';
-        } else if (this.currentMusicMode === 'rhythmic' && motionVal > 0.5) {
-          // Stay in rhythmic with buffer
-          newMode = 'rhythmic';
-        } else if (saturationVal > 0.6 && motionVal > 0.4) {
-          // Higher thresholds for structured
-          newMode = 'structured';
-        } else if (this.currentMusicMode === 'structured' && saturationVal > 0.4 && motionVal > 0.2) {
-          // Stay in structured with buffer
-          newMode = 'structured';
-        } else if (motionVal > 0.2 && motionVal < 0.7) {
-          newMode = 'melodic';
-        }
-        
-        if (newMode !== this.currentMusicMode) {
-          this.currentMusicMode = newMode;
-          this.lastModeChange = now;
-          this.updateModeDisplay(newMode);
-          
-          console.log('🎵 Mode changed to:', newMode, '(beat intensity:', this.beatIntensity.toFixed(2), ')');
-        }
-      }
+      // Mode is now manually controlled via UI buttons
+      // evaluateMusicMode() method removed - mode switching is user-controlled
       
       createDepthMap(imageData) {
         const data = imageData.data;

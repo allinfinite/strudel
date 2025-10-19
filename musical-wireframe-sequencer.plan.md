@@ -103,16 +103,26 @@ All items have been successfully implemented! See `MUSICAL-SEQUENCER-IMPLEMENTAT
 - ✅ Master clock running at 120 BPM with 16th note precision
 - ✅ Polyphony limiting with 6-note maximum and intelligent priority queue
 - ✅ Dynamic beat layer with kick/hi-hat that adapts to motion (0.2-0.8 intensity)
-- ✅ All four musical modes working with quantized timing
+- ✅ All four musical modes working with quantized timing - **Now with manual UI control**
 - ✅ Proper pentatonic scale with musical intervals [1, 9/8, 5/4, 3/2, 5/3]
 - ✅ Enhanced visual feedback with beat pulse (1.8x downbeat, 1.3x beats)
+
+### Recent Updates (October 19, 2025):
+- **Mode Control Change**: Switched from automatic webcam-triggered modes to manual UI buttons
+- Added mode selector UI with 4 buttons: 🌙 Sparse, 🎵 Melodic, 🥁 Rhythmic, 🎹 Structured
+- Removed automatic `evaluateMusicMode()` detection logic
+- Each mode has fixed beat intensity: Sparse (0.2), Melodic (0.4), Rhythmic (0.8), Structured (0.6)
+- Users now have full control over musical mode selection
 
 ### Final Code State:
 - `website/src/pages/webcam-music.astro` - fully implemented with all improvements
 - System produces structured, musical output with steady beat and controlled polyphony
+- Manual mode control provides predictable and user-directed musical experience
 - Ready for deployment and testing!
 
 ### Commit History:
 - `134d8866` - Improved musical wireframe sequencer implementation
 - `f17c865e` - Added implementation complete documentation
+- `f18d9803` - Fix: Make music mode switching more stable (later superseded by manual control)
+- Latest - Add manual mode selector UI and remove automatic mode switching
 
