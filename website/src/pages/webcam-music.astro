@@ -378,6 +378,7 @@ const currentPage = Astro.url.pathname;
         // Point tracking
         this.activePoints = new Set();
         this.lastFrameData = null;
+        this.lastBrightness = null;
         
         this.startBtn = document.getElementById('startBtn');
         this.stopBtn = document.getElementById('stopBtn');
@@ -505,31 +506,112 @@ const currentPage = Astro.url.pathname;
       
       startModeMonitoring() {
         setInterval(() => {
-          if (!this.isPlaying) return;
+          if (!this.isPlaying || !this.video) return;
           
-          // Import the webcam object to get current values
+          // Get values from our own analysis
+          const currentValues = this.getCurrentWebcamValues();
+          
+          if (currentValues) {
+            this.updateUI({
+              hue: currentValues.hue.toFixed(0),
+              brightness: currentValues.brightness.toFixed(0),
+              motion: currentValues.motion.toFixed(0),
+              saturation: currentValues.saturation.toFixed(0)
+            });
+            
+            // Update rotation speed based on motion
+            this.rotationSpeed = 0.3 + currentValues.motion * 1.0;
+          }
+          
+          // Import the webcam object to get mode
           import('@strudel/sensors').then(({ webcam, getCurrentMode }) => {
             if (webcam && webcam.isInitialized) {
-              const { hue, brightness, motion, saturation } = webcam._color || {};
-              const motionVal = webcam._motion || 0;
-              const brightnessVal = webcam._brightness || 0;
-              
-              this.updateUI({
-                hue: (hue * 360).toFixed(0),
-                brightness: (brightnessVal * 100).toFixed(0),
-                motion: (motionVal * 100).toFixed(0),
-                saturation: ((saturation || 0) * 100).toFixed(0)
-              });
-              
               // Update mode display
               const currentMode = getCurrentMode ? getCurrentMode() : 'energetic';
               this.updateModeDisplay(currentMode);
-              
-              // Update rotation speed based on motion
-              this.rotationSpeed = 0.3 + motionVal * 1.0;
             }
           });
         }, 100);
+      }
+      
+      getCurrentWebcamValues() {
+        if (!this.video || this.video.readyState < 2) return null;
+        
+        try {
+          // Process current video frame
+          this.videoCtx.save();
+          this.videoCtx.scale(-1, 1);
+          this.videoCtx.drawImage(this.video, -40, 0, 40, 30);
+          this.videoCtx.restore();
+          const frame = this.videoCtx.getImageData(0, 0, 40, 30);
+          
+          // Analyze the frame
+          const data = frame.data;
+          let totalR = 0, totalG = 0, totalB = 0;
+          let totalBrightness = 0;
+          let totalSaturation = 0;
+          let totalHue = 0;
+          let pixelCount = 0;
+          
+          // Sample every 4th pixel for performance
+          for (let i = 0; i < data.length; i += 16) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            totalR += r;
+            totalG += g;
+            totalB += b;
+            
+            // Calculate brightness
+            const brightness = (r + g + b) / 3 / 255;
+            totalBrightness += brightness;
+            
+            // Calculate HSL
+            const hsl = this.rgbToHsl(r, g, b);
+            totalHue += hsl.h;
+            totalSaturation += hsl.s;
+            
+            pixelCount++;
+          }
+          
+          const avgR = totalR / pixelCount;
+          const avgG = totalG / pixelCount;
+          const avgB = totalB / pixelCount;
+          const avgBrightness = totalBrightness / pixelCount;
+          const avgHue = totalHue / pixelCount;
+          const avgSaturation = totalSaturation / pixelCount;
+          
+          // Calculate motion (simplified - compare with previous frame)
+          const motion = this.calculateMotion(avgBrightness);
+          
+          return {
+            hue: avgHue * 360,
+            brightness: avgBrightness * 100,
+            motion: motion * 100,
+            saturation: avgSaturation * 100,
+            r: avgR / 255,
+            g: avgG / 255,
+            b: avgB / 255
+          };
+        } catch (error) {
+          console.error('Error analyzing webcam frame:', error);
+          return null;
+        }
+      }
+      
+      calculateMotion(currentBrightness) {
+        // Simple motion detection based on brightness changes
+        if (!this.lastBrightness) {
+          this.lastBrightness = currentBrightness;
+          return 0;
+        }
+        
+        const motion = Math.abs(currentBrightness - this.lastBrightness);
+        this.lastBrightness = currentBrightness;
+        
+        // Smooth the motion value
+        return Math.min(motion * 10, 1);
       }
       
       updateModeDisplay(mode) {
