@@ -1,6 +1,5 @@
 {
-  "buildCommand": "cd website && npm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "pnpm --filter website run build && mkdir -p .vercel/output/static && cp -R website/dist/* .vercel/output/static",
   "installCommand": "pnpm install && pnpm -w run jsdoc-json",
   "framework": null
 }
