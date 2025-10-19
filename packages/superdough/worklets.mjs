@@ -1319,3 +1319,6 @@ class WavetableOscillatorProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('wavetable-oscillator-processor', WavetableOscillatorProcessor);
+
+// Export the file URL as default for AudioWorklet registration
+export default new URL('./worklets.mjs', import.meta.url);
