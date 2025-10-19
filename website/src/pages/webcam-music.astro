@@ -380,6 +380,32 @@ const currentPage = Astro.url.pathname;
         this.lastFrameData = null;
         this.lastBrightness = null;
         
+        // Master clock and timing
+        this.masterClock = null;
+        this.currentStep = 0;
+        this.stepsPerBeat = 4; // 16th notes
+        this.quantizedNotes = [];
+        this.bpm = 120;
+        this.beatDuration = 60000 / this.bpm; // ms per beat
+        
+        // Polyphony limiting
+        this.maxPolyphony = 4;
+        this.priorityQueue = [];
+        
+        // Musical structure
+        this.currentMusicMode = 'sparse';
+        this.lastModeChange = 0;
+        this.modeChangeCooldown = 2000; // 2 seconds
+        
+        // Harmonic system
+        this.currentKey = 'C';
+        this.currentScale = [1, 2, 3, 5, 6]; // Pentatonic scale ratios
+        this.chordProgression = [1, 6, 4, 5]; // I-vi-IV-V progression
+        
+        // Beat layer
+        this.beatIntensity = 0.5;
+        this.metronomeEnabled = true;
+        
         this.startBtn = document.getElementById('startBtn');
         this.stopBtn = document.getElementById('stopBtn');
         this.statusIndicator = document.getElementById('statusIndicator');
@@ -436,6 +462,7 @@ const currentPage = Astro.url.pathname;
           
           // Initialize our custom audio system
           this.initAudioSystem();
+          this.startMasterClock();
           
           await startWebcamMusic();
           
@@ -627,7 +654,79 @@ const currentPage = Astro.url.pathname;
         console.log('🎵 Dynamic wireframe audio system initialized!');
       }
       
+      startMasterClock() {
+        if (this.masterClock) return;
+        
+        const stepDuration = this.beatDuration / this.stepsPerBeat;
+        
+        this.masterClock = setInterval(() => {
+          this.currentStep = (this.currentStep + 1) % (this.stepsPerBeat * 4); // 4 beats per measure
+          
+          // Process quantized notes
+          this.processQuantizedNotes();
+          
+          // Play metronome
+          if (this.metronomeEnabled) {
+            this.playMetronome();
+          }
+          
+          // Update mode
+          this.evaluateMusicMode();
+          
+        }, stepDuration);
+        
+        console.log('🎼 Master clock started at', this.bpm, 'BPM');
+      }
+      
+      quantizeToGrid(noteData) {
+        const currentTime = this.audioContext.currentTime;
+        const nextStepTime = currentTime + ((this.stepsPerBeat * 4 - this.currentStep) * this.beatDuration / this.stepsPerBeat);
+        
+        return {
+          ...noteData,
+          scheduledTime: nextStepTime,
+          step: this.currentStep
+        };
+      }
+      
+      processQuantizedNotes() {
+        // Process any notes scheduled for this step
+        const currentTime = this.audioContext.currentTime;
+        const tolerance = 50; // ms tolerance
+        
+        for (let i = this.quantizedNotes.length - 1; i >= 0; i--) {
+          const note = this.quantizedNotes[i];
+          if (Math.abs(note.scheduledTime - currentTime) < tolerance) {
+            this.playQuantizedNote(note);
+            this.quantizedNotes.splice(i, 1);
+          }
+        }
+      }
+      
+      playQuantizedNote(noteData) {
+        // Check polyphony limit
+        if (this.activeOscillators.size >= this.maxPolyphony) {
+          this.stopLowestPriorityNote();
+        }
+        
+        // Create the note
+        this.createPointAudio(
+          noteData.x, 
+          noteData.y, 
+          noteData.depth, 
+          noteData.hue, 
+          noteData.saturation, 
+          noteData.brightness
+        );
+      }
+      
       stopAllAudio() {
+        // Stop master clock
+        if (this.masterClock) {
+          clearInterval(this.masterClock);
+          this.masterClock = null;
+        }
+        
         // Stop all oscillators
         this.activeOscillators.forEach((osc, key) => {
           osc.stop();
@@ -655,6 +754,85 @@ const currentPage = Astro.url.pathname;
         this.ambientLayer.clear();
         
         this.activePoints.clear();
+        this.quantizedNotes = [];
+        this.priorityQueue = [];
+      }
+      
+      stopLowestPriorityNote() {
+        if (this.activeOscillators.size === 0) return;
+        
+        // Find the note with lowest priority (quietest or oldest)
+        let lowestPriority = Infinity;
+        let lowestKey = null;
+        
+        this.activeOscillators.forEach((osc, key) => {
+          const gainNode = this.activeEnvelopes.get(key);
+          const priority = gainNode ? gainNode.gain.value : 0;
+          
+          if (priority < lowestPriority) {
+            lowestPriority = priority;
+            lowestKey = key;
+          }
+        });
+        
+        if (lowestKey) {
+          this.stopPointAudio(lowestKey);
+        }
+      }
+      
+      playMetronome() {
+        if (!this.isAudioInitialized) return;
+        
+        // Kick on beat 1, hi-hat on other beats
+        const isKick = this.currentStep === 0;
+        const isHiHat = this.currentStep % this.stepsPerBeat === 0 && this.currentStep !== 0;
+        
+        if (isKick) {
+          this.playKick();
+        } else if (isHiHat) {
+          this.playHiHat();
+        }
+      }
+      
+      playKick() {
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(60, this.audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(30, this.audioContext.currentTime + 0.1);
+        
+        gainNode.gain.setValueAtTime(this.beatIntensity * 0.3, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+        
+        oscillator.start();
+        oscillator.stop(this.audioContext.currentTime + 0.2);
+      }
+      
+      playHiHat() {
+        const bufferSize = this.audioContext.sampleRate * 0.1;
+        const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+        }
+        
+        const source = this.audioContext.createBufferSource();
+        const gainNode = this.audioContext.createGain();
+        
+        source.buffer = buffer;
+        source.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        gainNode.gain.setValueAtTime(this.beatIntensity * 0.1, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.1);
+        
+        source.start();
+        source.stop(this.audioContext.currentTime + 0.1);
       }
       
       createPointAudio(x, y, depth, hue, saturation, brightness) {
@@ -704,10 +882,13 @@ const currentPage = Astro.url.pathname;
         // Start oscillator
         oscillator.start();
         
-        // Auto-stop after duration
+        // Auto-stop after duration (from musical layer)
+        const layerData = this.getLayerData(pointId);
+        const duration = layerData ? layerData.duration : (1000 + depth * 2000);
+        
         setTimeout(() => {
           this.stopPointAudio(pointId);
-        }, 1000 + depth * 2000);
+        }, duration);
       }
       
       stopPointAudio(pointId) {
@@ -738,66 +919,143 @@ const currentPage = Astro.url.pathname;
         // Create harmonic relationships based on position
         const baseNote = 220; // A3
         
-        // X position affects octave
-        const octave = Math.floor((x / 40) * 4) + 1;
+        // X position affects octave (limited to 3 octaves)
+        const octave = Math.floor((x / 40) * 3) + 1;
         
-        // Y position affects scale degree
-        const scale = [1, 1.125, 1.25, 1.333, 1.5, 1.667, 1.875]; // Major scale ratios
-        const scaleDegree = Math.floor((y / 30) * scale.length);
-        const ratio = scale[scaleDegree] || 1;
+        // Y position affects scale degree (use pentatonic for safety)
+        const scaleDegree = Math.floor((y / 30) * this.currentScale.length);
+        const ratio = this.currentScale[scaleDegree] || 1;
         
-        // Hue affects fine tuning (microtonal)
-        const microtone = 1 + (hue * 0.1);
+        // Snap to scale (remove microtonal tuning for better harmony)
+        const frequency = baseNote * octave * ratio;
         
-        // Depth affects harmonic overtones
-        const harmonic = 1 + Math.floor(depth * 3);
+        // Depth affects harmonic overtones (limited to prevent harsh sounds)
+        const harmonic = 1 + Math.floor(depth * 2);
         
-        return baseNote * octave * ratio * microtone * harmonic;
+        return this.snapToScale(frequency * harmonic);
+      }
+      
+      snapToScale(frequency) {
+        // Find the closest note in the current scale
+        const baseFreq = 220; // A3
+        const octave = Math.floor(Math.log2(frequency / baseFreq));
+        const normalizedFreq = frequency / (baseFreq * Math.pow(2, octave));
+        
+        // Find closest scale degree
+        let closestRatio = this.currentScale[0];
+        let minDistance = Math.abs(normalizedFreq - closestRatio);
+        
+        for (const ratio of this.currentScale) {
+          const distance = Math.abs(normalizedFreq - ratio);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestRatio = ratio;
+          }
+        }
+        
+        return baseFreq * Math.pow(2, octave) * closestRatio;
       }
       
       addToMusicalLayer(pointId, x, y, depth, frequency) {
-        // Bass layer (bottom third of mesh)
-        if (y > 20) {
-          this.bassLayer.set(pointId, {
-            frequency: frequency * 0.5, // Lower octave
-            type: 'bass',
-            x, y, depth
-          });
+        // Mode-specific layer assignment
+        switch (this.currentMusicMode) {
+          case 'sparse':
+            // Only bass and ambient layers
+            if (y > 20) {
+              this.bassLayer.set(pointId, {
+                frequency: frequency * 0.5,
+                type: 'bass',
+                x, y, depth,
+                duration: 4000 + depth * 2000 // Long sustains
+              });
+            }
+            if (depth > 0.9) {
+              this.ambientLayer.set(pointId, {
+                frequency: frequency * 0.25,
+                type: 'ambient',
+                x, y, depth,
+                duration: 6000 + depth * 2000 // Very long sustains
+              });
+            }
+            break;
+            
+          case 'melodic':
+            // Arpeggiated patterns
+            if (y > 10) {
+              this.melodyLayer.set(pointId, {
+                frequency: frequency,
+                type: 'melody',
+                x, y, depth,
+                duration: 1000 + depth * 1000 // Medium length
+              });
+            }
+            if (y > 20) {
+              this.bassLayer.set(pointId, {
+                frequency: frequency * 0.5,
+                type: 'bass',
+                x, y, depth,
+                duration: 2000 + depth * 1000
+              });
+            }
+            break;
+            
+          case 'rhythmic':
+            // Shorter, percussive notes
+            this.percussionLayer.set(pointId, {
+              frequency: frequency * 2,
+              type: 'percussion',
+              x, y, depth,
+              duration: 200 + depth * 300 // Short, punchy
+            });
+            if (y > 20) {
+              this.bassLayer.set(pointId, {
+                frequency: frequency * 0.5,
+                type: 'bass',
+                x, y, depth,
+                duration: 500 + depth * 500 // Short bass hits
+              });
+            }
+            break;
+            
+          case 'structured':
+            // Full harmonic structure
+            if (y > 20) {
+              this.bassLayer.set(pointId, {
+                frequency: frequency * 0.5,
+                type: 'bass',
+                x, y, depth,
+                duration: 1500 + depth * 1000
+              });
+            } else if (y > 10) {
+              this.melodyLayer.set(pointId, {
+                frequency: frequency,
+                type: 'melody',
+                x, y, depth,
+                duration: 1000 + depth * 1000
+              });
+            } else {
+              this.harmonyLayer.set(pointId, {
+                frequency: frequency * 1.5,
+                type: 'harmony',
+                x, y, depth,
+                duration: 2000 + depth * 1000
+              });
+            }
+            break;
         }
-        // Melody layer (middle third)
-        else if (y > 10) {
-          this.melodyLayer.set(pointId, {
-            frequency: frequency,
-            type: 'melody',
-            x, y, depth
-          });
-        }
-        // Harmony layer (top third)
-        else {
-          this.harmonyLayer.set(pointId, {
-            frequency: frequency * 1.5, // Higher octave
-            type: 'harmony',
-            x, y, depth
-          });
+      }
+      
+      getLayerData(pointId) {
+        // Check all layers for this point
+        const layers = [this.bassLayer, this.melodyLayer, this.harmonyLayer, this.percussionLayer, this.ambientLayer];
+        
+        for (const layer of layers) {
+          if (layer.has(pointId)) {
+            return layer.get(pointId);
+          }
         }
         
-        // Percussion layer (based on depth and saturation)
-        if (depth > 0.7) {
-          this.percussionLayer.set(pointId, {
-            frequency: frequency * 2,
-            type: 'percussion',
-            x, y, depth
-          });
-        }
-        
-        // Ambient layer (very deep points)
-        if (depth > 0.9) {
-          this.ambientLayer.set(pointId, {
-            frequency: frequency * 0.25, // Very low
-            type: 'ambient',
-            x, y, depth
-          });
-        }
+        return null;
       }
       
       updateUI(values) {
@@ -871,15 +1129,85 @@ const currentPage = Astro.url.pathname;
             if (depth > threshold) {
               const pointId = `${x}-${y}`;
               
-              // Check if this point should trigger audio
-              if (!this.activePoints.has(pointId) && depth > 0.3) {
-                this.createPointAudio(
-                  x, y, depth, 
-                  color.h, color.s, color.l
-                );
+              // Check if this point should trigger audio based on current mode
+              if (!this.activePoints.has(pointId) && this.shouldTriggerNote(depth, color)) {
+                // Queue note for quantization instead of playing immediately
+                const noteData = {
+                  x, y, depth,
+                  hue: color.h, 
+                  saturation: color.s, 
+                  brightness: color.l
+                };
+                
+                this.quantizedNotes.push(this.quantizeToGrid(noteData));
               }
             }
           }
+        }
+      }
+      
+      shouldTriggerNote(depth, color) {
+        // Mode-based triggering logic
+        switch (this.currentMusicMode) {
+          case 'sparse':
+            return depth > 0.7; // Only very deep points
+          case 'melodic':
+            return depth > 0.4; // Medium threshold
+          case 'rhythmic':
+            return depth > 0.2; // Lower threshold for more notes
+          case 'structured':
+            return depth > 0.5 && color.s > 0.3; // Colorful and deep
+          default:
+            return depth > 0.3;
+        }
+      }
+      
+      evaluateMusicMode() {
+        const now = Date.now();
+        if (now - this.lastModeChange < this.modeChangeCooldown) return;
+        
+        const currentValues = this.getCurrentWebcamValues();
+        if (!currentValues) return;
+        
+        const { motion, saturation, brightness } = currentValues;
+        const motionVal = motion / 100;
+        const saturationVal = saturation / 100;
+        
+        let newMode = this.currentMusicMode;
+        
+        // Mode switching logic
+        if (motionVal < 0.1 && saturationVal < 0.2) {
+          newMode = 'sparse';
+        } else if (motionVal > 0.6) {
+          newMode = 'rhythmic';
+        } else if (saturationVal > 0.5 && motionVal > 0.3) {
+          newMode = 'structured';
+        } else if (motionVal > 0.2 && motionVal < 0.6) {
+          newMode = 'melodic';
+        }
+        
+        if (newMode !== this.currentMusicMode) {
+          this.currentMusicMode = newMode;
+          this.lastModeChange = now;
+          this.updateModeDisplay(newMode);
+          
+          // Adjust beat intensity based on mode
+          switch (newMode) {
+            case 'sparse':
+              this.beatIntensity = 0.2;
+              break;
+            case 'melodic':
+              this.beatIntensity = 0.4;
+              break;
+            case 'rhythmic':
+              this.beatIntensity = 0.8;
+              break;
+            case 'structured':
+              this.beatIntensity = 0.6;
+              break;
+          }
+          
+          console.log('🎵 Mode changed to:', newMode);
         }
       }
       
@@ -912,6 +1240,9 @@ const currentPage = Astro.url.pathname;
         
         const baseHue = (this.time * 60) % 360;
         
+        // Pulse effect on beats
+        const beatPulse = this.currentStep === 0 ? 1.5 : 1.0;
+        
         // Draw horizontal lines
         for (let y = 0; y < 30; y++) {
           const points = [];
@@ -937,8 +1268,8 @@ const currentPage = Astro.url.pathname;
             const alpha = isActive ? 1.0 : 0.6;
             
             ctx.strokeStyle = color;
-            ctx.lineWidth = isActive ? 3 : 2;
-            ctx.globalAlpha = alpha;
+            ctx.lineWidth = (isActive ? 3 : 2) * beatPulse;
+            ctx.globalAlpha = alpha * beatPulse;
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             
@@ -973,8 +1304,8 @@ const currentPage = Astro.url.pathname;
             const alpha = isActive ? 1.0 : 0.6;
             
             ctx.strokeStyle = color;
-            ctx.lineWidth = isActive ? 3 : 2;
-            ctx.globalAlpha = alpha;
+            ctx.lineWidth = (isActive ? 3 : 2) * beatPulse;
+            ctx.globalAlpha = alpha * beatPulse;
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             
