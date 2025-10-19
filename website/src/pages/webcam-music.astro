@@ -389,7 +389,7 @@ const currentPage = Astro.url.pathname;
         this.beatDuration = 60000 / this.bpm; // ms per beat
         
         // Polyphony limiting
-        this.maxPolyphony = 4;
+        this.maxPolyphony = 6;
         this.priorityQueue = [];
         
         // Musical structure
@@ -399,7 +399,7 @@ const currentPage = Astro.url.pathname;
         
         // Harmonic system
         this.currentKey = 'C';
-        this.currentScale = [1, 2, 3, 5, 6]; // Pentatonic scale ratios
+        this.currentScale = [1, 9/8, 5/4, 3/2, 5/3]; // Pentatonic scale ratios (major pentatonic: C D E G A)
         this.chordProgression = [1, 6, 4, 5]; // I-vi-IV-V progression
         
         // Beat layer
@@ -680,23 +680,25 @@ const currentPage = Astro.url.pathname;
       
       quantizeToGrid(noteData) {
         const currentTime = this.audioContext.currentTime;
-        const nextStepTime = currentTime + ((this.stepsPerBeat * 4 - this.currentStep) * this.beatDuration / this.stepsPerBeat);
+        const stepDuration = this.beatDuration / this.stepsPerBeat / 1000; // Convert to seconds
+        const stepsToNextBeat = this.stepsPerBeat - (this.currentStep % this.stepsPerBeat);
+        const nextBeatTime = currentTime + (stepsToNextBeat * stepDuration);
         
         return {
           ...noteData,
-          scheduledTime: nextStepTime,
-          step: this.currentStep
+          scheduledTime: nextBeatTime,
+          step: (this.currentStep + stepsToNextBeat) % (this.stepsPerBeat * 4)
         };
       }
       
       processQuantizedNotes() {
         // Process any notes scheduled for this step
         const currentTime = this.audioContext.currentTime;
-        const tolerance = 50; // ms tolerance
+        const tolerance = 0.05; // 50ms tolerance in seconds
         
         for (let i = this.quantizedNotes.length - 1; i >= 0; i--) {
           const note = this.quantizedNotes[i];
-          if (Math.abs(note.scheduledTime - currentTime) < tolerance) {
+          if (note.scheduledTime <= currentTime + tolerance) {
             this.playQuantizedNote(note);
             this.quantizedNotes.splice(i, 1);
           }
@@ -761,13 +763,28 @@ const currentPage = Astro.url.pathname;
       stopLowestPriorityNote() {
         if (this.activeOscillators.size === 0) return;
         
-        // Find the note with lowest priority (quietest or oldest)
+        // Find the note with lowest priority (quietest)
+        // In sparse mode, prefer keeping bass notes; in rhythmic mode, prefer percussion
         let lowestPriority = Infinity;
         let lowestKey = null;
         
         this.activeOscillators.forEach((osc, key) => {
           const gainNode = this.activeEnvelopes.get(key);
-          const priority = gainNode ? gainNode.gain.value : 0;
+          let priority = gainNode ? gainNode.gain.value : 0;
+          
+          // Boost priority for bass notes in sparse/melodic modes
+          if (this.currentMusicMode === 'sparse' || this.currentMusicMode === 'melodic') {
+            if (this.bassLayer.has(key)) {
+              priority *= 2; // Double priority for bass
+            }
+          }
+          
+          // Boost priority for percussion in rhythmic mode
+          if (this.currentMusicMode === 'rhythmic') {
+            if (this.percussionLayer.has(key)) {
+              priority *= 2;
+            }
+          }
           
           if (priority < lowestPriority) {
             lowestPriority = priority;
@@ -1164,9 +1181,18 @@ const currentPage = Astro.url.pathname;
       
       evaluateMusicMode() {
         const now = Date.now();
+        
+        // Update beat intensity continuously based on motion
+        const currentValues = this.getCurrentWebcamValues();
+        if (currentValues) {
+          const motionVal = currentValues.motion / 100;
+          // Smoothly adjust beat intensity based on motion
+          this.beatIntensity = 0.2 + motionVal * 0.6; // Range from 0.2 (still) to 0.8 (moving)
+        }
+        
+        // Only change mode after cooldown
         if (now - this.lastModeChange < this.modeChangeCooldown) return;
         
-        const currentValues = this.getCurrentWebcamValues();
         if (!currentValues) return;
         
         const { motion, saturation, brightness } = currentValues;
@@ -1191,23 +1217,7 @@ const currentPage = Astro.url.pathname;
           this.lastModeChange = now;
           this.updateModeDisplay(newMode);
           
-          // Adjust beat intensity based on mode
-          switch (newMode) {
-            case 'sparse':
-              this.beatIntensity = 0.2;
-              break;
-            case 'melodic':
-              this.beatIntensity = 0.4;
-              break;
-            case 'rhythmic':
-              this.beatIntensity = 0.8;
-              break;
-            case 'structured':
-              this.beatIntensity = 0.6;
-              break;
-          }
-          
-          console.log('🎵 Mode changed to:', newMode);
+          console.log('🎵 Mode changed to:', newMode, '(beat intensity:', this.beatIntensity.toFixed(2), ')');
         }
       }
       
@@ -1240,8 +1250,9 @@ const currentPage = Astro.url.pathname;
         
         const baseHue = (this.time * 60) % 360;
         
-        // Pulse effect on beats
-        const beatPulse = this.currentStep === 0 ? 1.5 : 1.0;
+        // Pulse effect on beats - more prominent on downbeat
+        const beatPulse = this.currentStep === 0 ? 1.8 : 
+                         (this.currentStep % this.stepsPerBeat === 0 ? 1.3 : 1.0);
         
         // Draw horizontal lines
         for (let y = 0; y < 30; y++) {
