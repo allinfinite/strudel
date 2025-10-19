@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bash tools/vercel-build.sh",
+  "buildCommand": "bash tools/vercel-build.sh || bash ../tools/vercel-build.sh",
   "installCommand": "pnpm install && pnpm -w run jsdoc-json",
   "framework": null
 }
