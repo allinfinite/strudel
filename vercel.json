@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd /vercel/path0 && pnpm --filter website build",
   "installCommand": "pnpm install && pnpm -w run jsdoc-json",
+  "buildCommand": "pnpm --filter website build",
   "outputDirectory": "website/dist"
 }
