@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd .. && pnpm --filter website run build && ls -la website/dist",
-  "outputDirectory": "website/dist",
+  "buildCommand": "pnpm --filter website run build",
+  "outputDirectory": "dist",
   "installCommand": "pnpm install && pnpm -w run jsdoc-json",
   "framework": null
 }
