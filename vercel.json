@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "cd website && pnpm run build",
   "outputDirectory": "website/dist",
   "installCommand": "cd .. && pnpm install && npm run jsdoc-json"
 }
