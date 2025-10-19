@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter website run build && if [ -d website ]; then cd website; fi; mkdir -p ../.vercel/output/static && cp -R dist/. ../.vercel/output/static && mkdir -p ../.vercel/output && echo '{\"version\":3}' > ../.vercel/output/config.json",
+  "buildCommand": "pnpm --filter website run build && ROOT=$PWD; if [ -d website ]; then ROOT=$PWD; elif [ -d ../website ]; then ROOT=$(cd .. && pwd); fi; DEST=$ROOT/.vercel/output/static; mkdir -p \"$DEST\"; cp -R \"$ROOT/website/dist\"/. \"$DEST\"; mkdir -p \"$ROOT/.vercel/output\"; echo '{\"version\":3}' > \"$ROOT/.vercel/output/config.json\"",
   "installCommand": "pnpm install && pnpm -w run jsdoc-json",
   "framework": null
 }
