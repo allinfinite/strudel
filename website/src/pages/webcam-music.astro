@@ -648,19 +648,9 @@ const currentPage = Astro.url.pathname;
               motion: currentValues.motion.toFixed(0),
               saturation: currentValues.saturation.toFixed(0)
             });
-            
-            // Update rotation speed based on motion
-            this.rotationSpeed = 0.3 + currentValues.motion * 1.0;
           }
           
-          // Import the webcam object to get mode
-          import('@strudel/sensors').then(({ webcam, getCurrentMode }) => {
-            if (webcam && webcam.isInitialized) {
-              // Update mode display
-              const currentMode = getCurrentMode ? getCurrentMode() : 'energetic';
-              this.updateModeDisplay(currentMode);
-            }
-          });
+          // Mode is now controlled manually via UI buttons - no automatic changes
         }, 100);
       }
       
