@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strudel All Sensors Combined Demo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      background: linear-gradient(90deg, #4CAF50, #2196F3, #9C27B0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .stop-btn {
+      background: #f44336;
+    }
+    .stop-btn:hover {
+      background: #da190b;
+    }
+    .sensor-sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .sensor-section {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .sensor-section h3 {
+      margin-top: 0;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #444;
+    }
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .sensor-value {
+      background: #333;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .sensor-value label {
+      display: block;
+      color: #888;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    .sensor-value .value {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .webcam .value { color: #4CAF50; }
+    .audio .value { color: #2196F3; }
+    .face .value { color: #9C27B0; }
+    .example-code {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .example-code h3 {
+      margin-top: 0;
+    }
+    pre {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    code {
+      color: #ffd700;
+    }
+    .tip {
+      background: #2a2a00;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #ffc107;
+      margin-bottom: 20px;
+    }
+    .status {
+      text-align: center;
+      padding: 15px;
+      background: #2a2a2a;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Strudel Multi-Modal Sensor Performance</h1>
+    
+    <div class="controls">
+      <button id="startBtn">🚀 Start All Sensors</button>
+      <button id="stopBtn" class="stop-btn" disabled>Stop</button>
+    </div>
+    
+    <div class="tip">
+      <strong>🎭 Multi-Modal Performance System:</strong> This demo combines webcam, microphone, and face tracking 
+      to create an immersive interactive music experience. Move, sing, and express yourself!
+    </div>
+    
+    <div class="status" id="status">
+      Click "Start All Sensors" to begin
+    </div>
+    
+    <div class="sensor-sections">
+      <div class="sensor-section webcam">
+        <h3>📷 Webcam Sensors</h3>
+        <div class="sensor-grid">
+          <div class="sensor-value">
+            <label>Hue</label>
+            <div class="value" id="colorH">0.00</div>
+          </div>
+          <div class="sensor-value">
+            <label>Brightness</label>
+            <div class="value" id="brightness">0.00</div>
+          </div>
+          <div class="sensor-value">
+            <label>Motion</label>
+            <div class="value" id="motion">0.00</div>
+          </div>
+          <div class="sensor-value">
+            <label>Edge</label>
+            <div class="value" id="edge">0.00</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sensor-section audio">
+        <h3>🎤 Audio Input</h3>
+        <div class="sensor-grid">
+          <div class="sensor-value">
+            <label>Volume</label>
+            <div class="value" id="volume">0.00</div>
+          </div>
+          <div class="sensor-value">
+            <label>Pitch (Hz)</label>
+            <div class="value" id="pitch">0</div>
+          </div>
+          <div class="sensor-value">
+            <label>Centroid</label>
+            <div class="value" id="centroid">0.00</div>
+          </div>
+          <div class="sensor-value">
+            <label>Bass</label>
+            <div class="value" id="bass">0.00</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sensor-section face">
+        <h3>😀 Face Tracking</h3>
+        <div class="sensor-grid">
+          <div class="sensor-value">
+            <label>Face X</label>
+            <div class="value" id="faceX">0.00</div>
+          </div>
+          <div class="sensor-value">
+            <label>Face Y</label>
+            <div class="value" id="faceY">0.00</div>
+          </div>
+          <div class="sensor-value">
+            <label>Mouth Open</label>
+            <div class="value" id="mouthOpen">0.00</div>
+          </div>
+          <div class="sensor-value">
+            <label>Smile</label>
+            <div class="value" id="smile">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="example-code">
+      <h3>🎵 Active Multi-Modal Pattern</h3>
+      <pre><code>// Voice sets the melody
+note(audioInNote)
+  // Color controls the synth timbre
+  .s(camColorH.choose("sine", "triangle", "sawtooth", "square"))
+  // Volume controls gain
+  .gain(audioInVolume.range(0.5, 1))
+  // Brightness controls filter
+  .lpf(camBrightness.range(500, 5000))
+  
+  // Face adds harmony
+  .stack(
+    note(audioInNote.add(faceRotZ.range(-7, 7).floor()))
+      .s("triangle")
+      .gain(0.4)
+      .lpf(faceMouthOpen.range(1000, 5000))
+  )
+  
+  // Motion adds rhythm variation
+  .fast(camMotion.range(1, 2))
+  
+  // Audio spectral features add effects
+  .room(audioInCentroid.range(0, 0.5))
+  .delay(audioInBass.range(0, 0.3))</code></pre>
+    </div>
+    
+    <div class="example-code">
+      <h3>🎭 How It Works</h3>
+      <ul>
+        <li><strong>Voice:</strong> Your singing/humming pitch becomes the melody</li>
+        <li><strong>Camera Color:</strong> The dominant color in your webcam chooses different synthesizer sounds</li>
+        <li><strong>Brightness:</strong> How bright your camera is controls the filter cutoff</li>
+        <li><strong>Face Rotation:</strong> Tilting your head adds harmonic variations</li>
+        <li><strong>Mouth Movement:</strong> Opening your mouth brightens the harmony</li>
+        <li><strong>Motion:</strong> Moving in frame speeds up the pattern</li>
+        <li><strong>Spectral Features:</strong> Your voice's brightness adds reverb, bass adds delay</li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initAudio } from 'https://unpkg.com/@strudel/superdough';
+    import { evalScope, hush } from 'https://unpkg.com/@strudel/core';
+    import * as tonal from 'https://unpkg.com/@strudel/tonal';
+    import * as mini from 'https://unpkg.com/@strudel/mini';
+    import * as sensors from '../../packages/sensors/index.mjs';
+    
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const status = document.getElementById('status');
+    
+    let pattern;
+    let updateInterval;
+    
+    function updateStatus(message) {
+      status.textContent = message;
+    }
+    
+    function updateDisplay() {
+      // Webcam
+      document.getElementById('colorH').textContent = sensors.camColorH.valueOf().toFixed(2);
+      document.getElementById('brightness').textContent = sensors.camBrightness.valueOf().toFixed(2);
+      document.getElementById('motion').textContent = sensors.camMotion.valueOf().toFixed(2);
+      document.getElementById('edge').textContent = sensors.camEdgeAmount.valueOf().toFixed(2);
+      
+      // Audio
+      document.getElementById('volume').textContent = sensors.audioInVolume.valueOf().toFixed(2);
+      document.getElementById('pitch').textContent = Math.round(sensors.audioInPitch.valueOf());
+      document.getElementById('centroid').textContent = sensors.audioInCentroid.valueOf().toFixed(2);
+      document.getElementById('bass').textContent = sensors.audioInBass.valueOf().toFixed(2);
+      
+      // Face
+      document.getElementById('faceX').textContent = sensors.faceX.valueOf().toFixed(2);
+      document.getElementById('faceY').textContent = sensors.faceY.valueOf().toFixed(2);
+      document.getElementById('mouthOpen').textContent = sensors.faceMouthOpen.valueOf().toFixed(2);
+      document.getElementById('smile').textContent = sensors.faceSmile.valueOf().toFixed(2);
+    }
+    
+    startBtn.addEventListener('click', async () => {
+      try {
+        startBtn.disabled = true;
+        
+        // Initialize audio
+        updateStatus('🔊 Initializing audio...');
+        await initAudio();
+        
+        // Initialize webcam
+        updateStatus('📷 Starting webcam...');
+        await sensors.enableWebcam();
+        
+        // Initialize microphone
+        updateStatus('🎤 Starting microphone...');
+        await sensors.enableAudioIn();
+        
+        // Initialize face tracking (this may take a moment to load the model)
+        updateStatus('😀 Loading face tracking model...');
+        await sensors.enableFaceTracking();
+        
+        // Set up scope
+        updateStatus('🎵 Setting up patterns...');
+        await evalScope(mini, tonal, sensors);
+        
+        // Create multi-modal pattern
+        pattern = sensors.note(sensors.audioInNote)
+          .s(sensors.camColorH.choose("sine", "triangle", "sawtooth", "square"))
+          .gain(sensors.audioInVolume.range(0.5, 1))
+          .lpf(sensors.camBrightness.range(500, 5000))
+          .stack(
+            sensors.note(sensors.audioInNote.add(sensors.faceRotZ.range(-7, 7).floor()))
+              .s("triangle")
+              .gain(0.4)
+              .lpf(sensors.faceMouthOpen.range(1000, 5000))
+          )
+          .fast(sensors.camMotion.range(1, 2))
+          .room(sensors.audioInCentroid.range(0, 0.5))
+          .delay(sensors.audioInBass.range(0, 0.3));
+        
+        pattern.play();
+        
+        // Start display updates
+        updateInterval = setInterval(updateDisplay, 100);
+        
+        updateStatus('✨ All systems active! Perform and make music!');
+        startBtn.textContent = '✓ Running';
+        stopBtn.disabled = false;
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start: ' + error.message + '\n\nMake sure you allow camera and microphone access!');
+        startBtn.disabled = false;
+        startBtn.textContent = '🚀 Start All Sensors';
+        updateStatus('❌ Failed to start. Please try again.');
+      }
+    });
+    
+    stopBtn.addEventListener('click', () => {
+      hush();
+      sensors.disableWebcam();
+      sensors.disableAudioIn();
+      sensors.disableFaceTracking();
+      
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
+      
+      stopBtn.disabled = true;
+      startBtn.disabled = false;
+      startBtn.textContent = '🚀 Start All Sensors';
+      updateStatus('Stopped. Click "Start All Sensors" to begin again.');
+    });
+  </script>
+</body>
+</html>
+

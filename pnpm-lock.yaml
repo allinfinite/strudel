@@ -472,6 +472,19 @@ importers:
         specifier: ^1.6.0
         version: 1.6.0
 
+  packages/sensors:
+    dependencies:
+      '@strudel/core':
+        specifier: workspace:*
+        version: link:../core
+      superdough:
+        specifier: workspace:*
+        version: link:../superdough
+    devDependencies:
+      vite:
+        specifier: ^6.0.11
+        version: 6.0.11(@types/node@22.10.10)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.37.0)(yaml@2.7.0)
+
   packages/serial:
     dependencies:
       '@strudel/core':
@@ -741,6 +754,9 @@ importers:
       '@strudel/osc':
         specifier: workspace:*
         version: link:../packages/osc
+      '@strudel/sensors':
+        specifier: workspace:*
+        version: link:../packages/sensors
       '@strudel/serial':
         specifier: workspace:*
         version: link:../packages/serial

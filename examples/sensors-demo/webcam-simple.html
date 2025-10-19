@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Webcam Music - Simple Demo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Monaco', 'Courier New', monospace;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    
+    #container {
+      text-align: center;
+      max-width: 800px;
+      padding: 40px;
+    }
+    
+    h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 20px rgba(255,255,255,0.5);
+    }
+    
+    p {
+      font-size: 18px;
+      margin-bottom: 30px;
+      opacity: 0.9;
+    }
+    
+    button {
+      background: white;
+      border: none;
+      color: #667eea;
+      padding: 20px 40px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 50px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: all 0.3s;
+      margin: 10px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    #video {
+      width: 320px;
+      height: 240px;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      margin-top: 30px;
+      display: none;
+    }
+    
+    #status {
+      margin-top: 30px;
+      font-size: 20px;
+      padding: 20px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      display: none;
+    }
+    
+    .mode-badge {
+      display: inline-block;
+      padding: 10px 20px;
+      background: white;
+      color: #667eea;
+      border-radius: 20px;
+      font-weight: bold;
+      margin: 5px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    #instructions {
+      margin-top: 30px;
+      text-align: left;
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+    }
+    
+    #instructions h3 {
+      margin-top: 0;
+    }
+    
+    #instructions li {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>🎵 Webcam Music</h1>
+    <p>An interactive music system that responds to your movements and colors</p>
+    
+    <button id="startBtn" onclick="start()">🎬 Start Music</button>
+    <button id="stopBtn" onclick="stop()" style="display:none;">⏹️ Stop</button>
+    
+    <video id="video" autoplay playsinline muted></video>
+    
+    <div id="status">
+      <div>Current Mode: <span class="mode-badge" id="currentMode">ENERGETIC</span></div>
+      <div style="margin-top:15px; font-size:16px; opacity:0.8;">
+        The music changes automatically based on your movements!
+      </div>
+    </div>
+    
+    <div id="instructions">
+      <h3>🎮 How to Control the Music:</h3>
+      <ul>
+        <li><strong>🌙 AMBIENT</strong> - Cover your camera with your hand</li>
+        <li><strong>🎵 MELODIC</strong> - Sway gently</li>
+        <li><strong>⚡ ENERGETIC</strong> - Move around with bright lighting</li>
+        <li><strong>🌪️ CHAOTIC</strong> - Jump around wildly!</li>
+        <li><strong>▪️ MINIMAL</strong> - Wave a colorful object (red, blue, green)</li>
+      </ul>
+      <p style="margin-top:20px; opacity:0.8;">
+        <strong>Tip:</strong> The music responds to brightness, motion, and color changes.
+        Try different combinations and see what happens!
+      </p>
+    </div>
+  </div>
+  
+  <script type="module">
+    import { enableWebcam, startWebcamMusic, stopWebcamAudio, 
+             getCurrentMode } from '../../packages/sensors/index.mjs';
+    
+    let modeCheckInterval = null;
+    
+    window.start = async function() {
+      try {
+        // Enable webcam
+        await enableWebcam();
+        
+        // Show video
+        document.getElementById('video').style.display = 'block';
+        
+        // Start music
+        await startWebcamMusic();
+        
+        // Update UI
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'inline-block';
+        document.getElementById('status').style.display = 'block';
+        
+        // Start monitoring mode changes
+        modeCheckInterval = setInterval(() => {
+          const mode = getCurrentMode();
+          const badge = document.getElementById('currentMode');
+          badge.textContent = mode.toUpperCase();
+          
+          // Color code the badge
+          const colors = {
+            'ambient': '#3498db',
+            'melodic': '#9b59b6',
+            'energetic': '#e74c3c',
+            'chaotic': '#f39c12',
+            'minimal': '#95a5a6'
+          };
+          badge.style.background = colors[mode] || 'white';
+          badge.style.color = 'white';
+        }, 100);
+        
+      } catch (e) {
+        alert('Error: ' + e.message + '\n\nMake sure to allow camera access!');
+      }
+    };
+    
+    window.stop = function() {
+      stopWebcamAudio();
+      if (modeCheckInterval) {
+        clearInterval(modeCheckInterval);
+        modeCheckInterval = null;
+      }
+      
+      // Update UI
+      document.getElementById('startBtn').style.display = 'inline-block';
+      document.getElementById('stopBtn').style.display = 'none';
+      document.getElementById('status').style.display = 'none';
+    };
+  </script>
+</body>
+</html>
+

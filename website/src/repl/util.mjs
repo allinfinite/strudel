@@ -83,6 +83,7 @@ export function loadModules() {
     import('@strudel/tidal'),
     import('@strudel/gamepad'),
     import('@strudel/motion'),
+    import('@strudel/sensors'),
     import('@strudel/mqtt'),
     import('@strudel/mondo'),
   ];

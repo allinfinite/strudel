@@ -1,0 +1,47 @@
+{
+  "name": "@strudel/sensors",
+  "version": "1.0.0",
+  "description": "Webcam and audio input sensors for Strudel - control music with your camera, microphone, face, hands, and body",
+  "main": "index.mjs",
+  "type": "module",
+  "publishConfig": {
+    "main": "dist/index.mjs"
+  },
+  "scripts": {
+    "build": "vite build",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://codeberg.org/uzu/strudel.git"
+  },
+  "keywords": [
+    "tidalcycles",
+    "strudel",
+    "pattern",
+    "livecoding",
+    "algorave",
+    "webcam",
+    "camera",
+    "microphone",
+    "audio-input",
+    "face-tracking",
+    "hand-tracking",
+    "pose-tracking",
+    "sensors"
+  ],
+  "author": "Strudel contributors",
+  "license": "AGPL-3.0-or-later",
+  "bugs": {
+    "url": "https://codeberg.org/uzu/strudel/issues"
+  },
+  "homepage": "https://codeberg.org/uzu/strudel#readme",
+  "dependencies": {
+    "@strudel/core": "workspace:*",
+    "superdough": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.11"
+  }
+}
+

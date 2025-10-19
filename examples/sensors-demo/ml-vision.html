@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strudel ML Vision Sensors Demo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background: #9C27B0;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #7B1FA2;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .stop-btn {
+      background: #f44336;
+    }
+    .stop-btn:hover {
+      background: #da190b;
+    }
+    .info {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .sensor-value {
+      background: #333;
+      padding: 12px;
+      border-radius: 6px;
+    }
+    .sensor-value label {
+      display: block;
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .sensor-value .value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #9C27B0;
+    }
+    .example-code {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .example-code h3 {
+      margin-top: 0;
+    }
+    pre {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    code {
+      color: #ce9178;
+    }
+    .tip {
+      background: #3a003a;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #9C27B0;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>😀✋🕺 Strudel ML Vision Sensors Demo</h1>
+    
+    <div class="controls">
+      <button id="faceBtn">Start Face Tracking</button>
+      <button id="handBtn">Start Hand Tracking</button>
+      <button id="poseBtn">Start Pose Tracking</button>
+      <button id="stopBtn" class="stop-btn" disabled>Stop All</button>
+    </div>
+    
+    <div class="tip">
+      <strong>💡 Tips:</strong> 
+      <ul style="margin: 5px 0;">
+        <li><strong>Face:</strong> Move your head, open your mouth, smile!</li>
+        <li><strong>Hands:</strong> Open/close your hand, make pinch gestures</li>
+        <li><strong>Pose:</strong> Spread your arms, move around, jump!</li>
+      </ul>
+    </div>
+    
+    <div class="info" id="faceInfo" style="display:none;">
+      <h3>😀 Face Tracking Values</h3>
+      <div class="sensor-grid">
+        <div class="sensor-value">
+          <label>Face X</label>
+          <div class="value" id="faceX">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Face Y</label>
+          <div class="value" id="faceY">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Face Size</label>
+          <div class="value" id="faceSize">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Mouth Open</label>
+          <div class="value" id="mouthOpen">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Smile</label>
+          <div class="value" id="smile">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Eyebrow Raise</label>
+          <div class="value" id="eyebrowRaise">0.00</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="info" id="handInfo" style="display:none;">
+      <h3>✋ Hand Tracking Values</h3>
+      <div class="sensor-grid">
+        <div class="sensor-value">
+          <label>Hand X</label>
+          <div class="value" id="handX">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Hand Y</label>
+          <div class="value" id="handY">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Openness</label>
+          <div class="value" id="openness">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Pinch</label>
+          <div class="value" id="pinch">0.00</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="info" id="poseInfo" style="display:none;">
+      <h3>🕺 Pose Tracking Values</h3>
+      <div class="sensor-grid">
+        <div class="sensor-value">
+          <label>Pose X</label>
+          <div class="value" id="poseX">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Pose Y</label>
+          <div class="value" id="poseY">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Arm Spread</label>
+          <div class="value" id="spread">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Height</label>
+          <div class="value" id="height">0.00</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="example-code">
+      <h3>🎵 Example Patterns</h3>
+      <pre><code>// Face Theremin
+note(faceX.range(48, 84))
+  .s("sawtooth")
+  .lpf(faceY.range(200, 5000))
+  .gain(faceSize)
+  .room(faceMouthOpen.range(0, 0.8))
+
+// Hand Position Controller
+note(handY.range(48, 72))
+  .s("triangle")
+  .pan(handX)
+  .lpf(handOpenness.range(500, 5000))
+
+// Body Dance Synth
+note(poseX.range(36, 84))
+  .s("sawtooth")
+  .lpf(poseY.range(200, 8000))
+  .gain(poseSpread)
+  .delay(poseHeight.range(0, 0.5))</code></pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initAudio } from 'https://unpkg.com/@strudel/superdough';
+    import { evalScope, hush } from 'https://unpkg.com/@strudel/core';
+    import * as tonal from 'https://unpkg.com/@strudel/tonal';
+    import * as mini from 'https://unpkg.com/@strudel/mini';
+    import * as sensors from '../../packages/sensors/index.mjs';
+    
+    const faceBtn = document.getElementById('faceBtn');
+    const handBtn = document.getElementById('handBtn');
+    const poseBtn = document.getElementById('poseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    
+    let pattern;
+    let updateInterval;
+    
+    // Update face display
+    function updateFaceDisplay() {
+      document.getElementById('faceX').textContent = sensors.faceX.valueOf().toFixed(2);
+      document.getElementById('faceY').textContent = sensors.faceY.valueOf().toFixed(2);
+      document.getElementById('faceSize').textContent = sensors.faceSize.valueOf().toFixed(2);
+      document.getElementById('mouthOpen').textContent = sensors.faceMouthOpen.valueOf().toFixed(2);
+      document.getElementById('smile').textContent = sensors.faceSmile.valueOf().toFixed(2);
+      document.getElementById('eyebrowRaise').textContent = sensors.faceEyebrowRaise.valueOf().toFixed(2);
+    }
+    
+    // Update hand display
+    function updateHandDisplay() {
+      document.getElementById('handX').textContent = sensors.handX.valueOf().toFixed(2);
+      document.getElementById('handY').textContent = sensors.handY.valueOf().toFixed(2);
+      document.getElementById('openness').textContent = sensors.handOpenness.valueOf().toFixed(2);
+      document.getElementById('pinch').textContent = sensors.handPinch.valueOf().toFixed(2);
+    }
+    
+    // Update pose display
+    function updatePoseDisplay() {
+      document.getElementById('poseX').textContent = sensors.poseX.valueOf().toFixed(2);
+      document.getElementById('poseY').textContent = sensors.poseY.valueOf().toFixed(2);
+      document.getElementById('spread').textContent = sensors.poseSpread.valueOf().toFixed(2);
+      document.getElementById('height').textContent = sensors.poseHeight.valueOf().toFixed(2);
+    }
+    
+    faceBtn.addEventListener('click', async () => {
+      try {
+        faceBtn.disabled = true;
+        faceBtn.textContent = 'Loading model...';
+        
+        await initAudio();
+        await sensors.enableFaceTracking();
+        await evalScope(mini, tonal, sensors);
+        
+        // Face-controlled pattern
+        pattern = sensors.note(sensors.faceX.range(48, 84))
+          .s("sawtooth")
+          .lpf(sensors.faceY.range(200, 5000))
+          .gain(sensors.faceSize.range(0.3, 1))
+          .room(sensors.faceMouthOpen.range(0, 0.8));
+        
+        pattern.play();
+        
+        document.getElementById('faceInfo').style.display = 'block';
+        updateInterval = setInterval(updateFaceDisplay, 100);
+        
+        faceBtn.textContent = '✓ Face Active';
+        stopBtn.disabled = false;
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start: ' + error.message);
+        faceBtn.disabled = false;
+        faceBtn.textContent = 'Start Face Tracking';
+      }
+    });
+    
+    handBtn.addEventListener('click', async () => {
+      try {
+        handBtn.disabled = true;
+        handBtn.textContent = 'Loading model...';
+        
+        await initAudio();
+        await sensors.enableHandTracking();
+        await evalScope(mini, tonal, sensors);
+        
+        // Hand-controlled pattern
+        pattern = sensors.note(sensors.handY.range(48, 72))
+          .s("triangle")
+          .pan(sensors.handX)
+          .lpf(sensors.handOpenness.range(500, 5000))
+          .room(sensors.handPinch.range(0, 0.8));
+        
+        pattern.play();
+        
+        document.getElementById('handInfo').style.display = 'block';
+        updateInterval = setInterval(updateHandDisplay, 100);
+        
+        handBtn.textContent = '✓ Hand Active';
+        stopBtn.disabled = false;
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start: ' + error.message);
+        handBtn.disabled = false;
+        handBtn.textContent = 'Start Hand Tracking';
+      }
+    });
+    
+    poseBtn.addEventListener('click', async () => {
+      try {
+        poseBtn.disabled = true;
+        poseBtn.textContent = 'Loading model...';
+        
+        await initAudio();
+        await sensors.enablePoseTracking();
+        await evalScope(mini, tonal, sensors);
+        
+        // Pose-controlled pattern
+        pattern = sensors.note(sensors.poseX.range(36, 84))
+          .s("sawtooth")
+          .lpf(sensors.poseY.range(200, 8000))
+          .gain(sensors.poseSpread.range(0.3, 1))
+          .delay(sensors.poseHeight.range(0, 0.5));
+        
+        pattern.play();
+        
+        document.getElementById('poseInfo').style.display = 'block';
+        updateInterval = setInterval(updatePoseDisplay, 100);
+        
+        poseBtn.textContent = '✓ Pose Active';
+        stopBtn.disabled = false;
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start: ' + error.message);
+        poseBtn.disabled = false;
+        poseBtn.textContent = 'Start Pose Tracking';
+      }
+    });
+    
+    stopBtn.addEventListener('click', () => {
+      hush();
+      sensors.disableFaceTracking();
+      sensors.disableHandTracking();
+      sensors.disablePoseTracking();
+      
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
+      
+      stopBtn.disabled = true;
+      faceBtn.disabled = false;
+      faceBtn.textContent = 'Start Face Tracking';
+      handBtn.disabled = false;
+      handBtn.textContent = 'Start Hand Tracking';
+      poseBtn.disabled = false;
+      poseBtn.textContent = 'Start Pose Tracking';
+    });
+  </script>
+</body>
+</html>
+

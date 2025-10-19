@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Strudel Dynamic Mode Changes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Monaco', 'Courier New', monospace;
+      background: #000;
+      color: #fff;
+      overflow: hidden;
+    }
+    
+    #mode-display {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 120px;
+      font-weight: bold;
+      text-transform: uppercase;
+      opacity: 0.8;
+      text-shadow: 0 0 40px currentColor;
+      transition: all 0.5s ease;
+      z-index: 10;
+      pointer-events: none;
+    }
+    
+    .mode-ambient { color: #3498db; }
+    .mode-melodic { color: #9b59b6; }
+    .mode-energetic { color: #e74c3c; }
+    .mode-chaotic { color: #f39c12; animation: chaotic 0.1s infinite; }
+    .mode-minimal { color: #95a5a6; }
+    
+    @keyframes chaotic {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      25% { transform: translate(-50%, -50%) rotate(2deg); }
+      75% { transform: translate(-50%, -50%) rotate(-2deg); }
+    }
+    
+    #controls {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+    }
+    
+    button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid #fff;
+      color: #fff;
+      padding: 12px 24px;
+      margin: 5px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 16px;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+    
+    button:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+    
+    button.active {
+      background: #fff;
+      color: #000;
+    }
+    
+    #info {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border: 2px solid #fff;
+      backdrop-filter: blur(10px);
+      max-width: 800px;
+    }
+    
+    #video {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 240px;
+      height: 180px;
+      border: 2px solid #fff;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+    }
+    
+    h2 {
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    
+    .trigger-info {
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-left: 4px solid #fff;
+    }
+    
+    .trigger-info strong {
+      color: #fff;
+    }
+    
+    #stats {
+      position: fixed;
+      top: 220px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px;
+      border: 2px solid #fff;
+      backdrop-filter: blur(10px);
+      font-size: 14px;
+      width: 240px;
+    }
+    
+    .stat {
+      margin: 5px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .stat-bar {
+      width: 150px;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    
+    .stat-fill {
+      height: 100%;
+      background: #fff;
+      transition: width 0.1s;
+    }
+  </style>
+</head>
+<body>
+  <div id="mode-display" class="mode-ambient">AMBIENT</div>
+  
+  <div id="controls">
+    <div>
+      <button onclick="init()">🎬 Start System</button>
+    </div>
+    <div>
+      <button onclick="setMode('ambient')">🌙 Ambient</button>
+      <button onclick="setMode('melodic')">🎵 Melodic</button>
+      <button onclick="setMode('energetic')">⚡ Energetic</button>
+      <button onclick="setMode('chaotic')">🌪️ Chaotic</button>
+      <button onclick="setMode('minimal')">▪️ Minimal</button>
+    </div>
+    <div>
+      <button onclick="stopAll()">⏹️ Stop</button>
+    </div>
+  </div>
+  
+  <video id="video" autoplay playsinline muted></video>
+  
+  <div id="stats">
+    <div class="stat">
+      <span>Brightness:</span>
+      <div class="stat-bar"><div class="stat-fill" id="brightness-bar"></div></div>
+    </div>
+    <div class="stat">
+      <span>Motion:</span>
+      <div class="stat-bar"><div class="stat-fill" id="motion-bar"></div></div>
+    </div>
+    <div class="stat">
+      <span>Hue (Color):</span>
+      <div class="stat-bar"><div class="stat-fill" id="audio-bar"></div></div>
+    </div>
+  </div>
+  
+  <div id="info">
+    <h2>🎮 Mode Change Triggers</h2>
+    
+    <div class="trigger-info">
+      <strong>🌙 AMBIENT</strong><br>
+      → Cover your camera (very dark) OR stay very still
+    </div>
+    
+    <div class="trigger-info">
+      <strong>🎵 MELODIC</strong><br>
+      → Medium brightness + gentle motion
+    </div>
+    
+    <div class="trigger-info">
+      <strong>⚡ ENERGETIC</strong><br>
+      → Bright light + moderate motion
+    </div>
+    
+    <div class="trigger-info">
+      <strong>🌪️ CHAOTIC</strong><br>
+      → Extreme motion OR very loud audio OR jump around!
+    </div>
+    
+    <div class="trigger-info">
+      <strong>▪️ MINIMAL</strong><br>
+      → Wave a different colored object (major color change)
+    </div>
+  </div>
+  
+  <script type="module">
+    import { enableWebcam, startWebcamAudio, stopWebcamAudio,
+             startFullAudioReactive, goAmbient, goMelodic, goEnergetic,
+             goChaotic, goMinimal, getCurrentMode
+           } from '../../packages/sensors/index.mjs';
+    
+    let statsInterval = null;
+    
+    window.init = async function() {
+      try {
+        await enableWebcam();
+        await startFullAudioReactive();
+        
+        // Start monitoring mode changes
+        startModeMonitoring();
+        startStatsDisplay();
+        
+        alert('🎵 System started! The music will automatically change modes based on your webcam movements!');
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    };
+    
+    window.setMode = async function(mode) {
+      const modes = {
+        'ambient': goAmbient,
+        'melodic': goMelodic,
+        'energetic': goEnergetic,
+        'chaotic': goChaotic,
+        'minimal': goMinimal
+      };
+      
+      if (modes[mode]) {
+        await modes[mode]();
+      }
+    };
+    
+    window.stopAll = function() {
+      stopWebcamAudio();
+      if (statsInterval) {
+        clearInterval(statsInterval);
+        statsInterval = null;
+      }
+    };
+    
+    function startModeMonitoring() {
+      setInterval(() => {
+        const mode = getCurrentMode();
+        updateModeDisplay(mode);
+      }, 100);
+    }
+    
+    function updateModeDisplay(mode) {
+      const display = document.getElementById('mode-display');
+      display.textContent = mode.toUpperCase();
+      display.className = `mode-${mode}`;
+    }
+    
+    function startStatsDisplay() {
+      statsInterval = setInterval(() => {
+        if (window.webcam) {
+          const brightness = window.webcam._brightness || 0;
+          const motion = window.webcam._motion || 0;
+          const hue = window.webcam._color?.h || 0;
+          
+          document.getElementById('brightness-bar').style.width = (brightness * 100) + '%';
+          document.getElementById('motion-bar').style.width = (motion * 100) + '%';
+          document.getElementById('audio-bar').style.width = (hue * 100) + '%';
+        }
+      }, 50);
+    }
+    
+    // Make webcam globally accessible for stats
+    import { webcam } from '../../packages/sensors/webcam.mjs';
+    window.webcam = webcam;
+  </script>
+</body>
+</html>
+

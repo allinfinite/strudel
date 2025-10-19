@@ -1,0 +1,486 @@
+---
+title: Sensors
+layout: ../../layouts/MainLayout.astro
+---
+
+# Sensors
+
+Control music with your **webcam**, **microphone**, **face**, **hands**, and **body**!
+
+The `@strudel/sensors` package provides sensor input patterns for Strudel, enabling creative interactive musical performances.
+
+## Features
+
+- 📷 **Webcam** - color extraction, motion detection, edge detection
+- 🎤 **Audio Input** - volume, pitch detection, spectral analysis  
+- 😀 **Face Tracking** - position, expressions, rotation (MediaPipe)
+- ✋ **Hand Tracking** - gestures, position (MediaPipe)
+- 🕺 **Pose Tracking** - body movement, arms (MediaPipe)
+
+## Quick Start
+
+### Webcam Control
+
+```js
+// Enable webcam
+await enableWebcam()
+
+// Control music with color hue
+note(camColorH.range(0, 12))
+  .scale("C:major")
+  .s("piano")
+```
+
+```js
+// Control speed with motion
+s("bd sd hh sd")
+  .fast(camMotion.range(1, 4))
+```
+
+### Microphone Control
+
+```js
+// Enable microphone
+await enableAudioIn()
+
+// Follow your voice pitch
+note(audioInNote)
+  .s("sine")
+  .gain(audioInVolume)
+```
+
+```js
+// Control filter with voice brightness
+s("sawtooth")
+  .note(48)
+  .lpf(audioInCentroid.range(200, 5000))
+```
+
+### Face Tracking
+
+```js
+// Enable face tracking
+await enableFaceTracking()
+
+// Pan with head movement
+s("bd sd")
+  .pan(faceX)
+
+// Control filter with mouth
+s("sine")
+  .note(60)
+  .lpf(faceMouthOpen.range(200, 5000))
+```
+
+### Hand Tracking
+
+```js
+// Enable hand tracking
+await enableHandTracking()
+
+// Control pitch with hand height
+note(handY.range(48, 72))
+  .s("triangle")
+  .pan(handX)
+```
+
+### Pose Tracking
+
+```js
+// Enable pose tracking
+await enablePoseTracking()
+
+// Control volume with arm spread
+note("<c e g b>")
+  .s("piano")
+  .gain(poseSpread)
+```
+
+## Webcam Sensors
+
+### Initialization
+
+```js
+await enableWebcam()
+```
+
+Request camera access and start analysis. Call this once before using any webcam sensors.
+
+```js
+disableWebcam()
+```
+
+Stop camera and release resources.
+
+### Color Signals
+
+Extract color information from the webcam feed:
+
+- `camColorR` - Average red (0-1)
+- `camColorG` - Average green (0-1)
+- `camColorB` - Average blue (0-1)
+- `camColorH` - Average hue (0-1)
+- `camColorS` - Average saturation (0-1)
+- `camColorL` - Average lightness (0-1)
+- `camBrightness` - Overall brightness (0-1)
+
+```js
+// Color-controlled melody
+note(camColorH.range(0, 12))
+  .scale("C:major")
+  .s("triangle")
+  .lpf(camBrightness.range(500, 5000))
+```
+
+### Motion Signals
+
+Detect movement in the camera:
+
+- `camMotion` - Overall motion amount (0-1)
+- `camMotionX` - Horizontal motion direction (-1 to 1)
+- `camMotionY` - Vertical motion direction (-1 to 1)
+- `camMotionSpeed` - Motion velocity (0-1)
+
+```js
+// Motion-reactive pattern
+s("bd sd hh sd")
+  .fast(camMotion.range(1, 4))
+  .pan(camMotionX.range(0, 1))
+```
+
+### Analysis Signals
+
+Advanced image analysis:
+
+- `camEdgeAmount` - Edge detection intensity (0-1)
+- `camContrast` - Image contrast (0-1)
+
+```js
+// Edges add texture
+s("bd*4")
+  .lpf(camEdgeAmount.range(200, 5000))
+  .room(camContrast)
+```
+
+### Grid Functions
+
+Analyze specific regions of the camera:
+
+```js
+camColorGrid(cols, rows)
+camMotionGrid(cols, rows)
+```
+
+Returns an array of values for each grid cell.
+
+```js
+// Motion-triggered drums
+const grid = camMotionGrid(4, 4)
+
+stack(
+  s("bd").struct(grid[0].gt(0.3)),  // Top-left
+  s("sd").struct(grid[5].gt(0.3)),  // Center
+  s("hh").struct(grid[15].gt(0.2))  // Bottom-right
+)
+```
+
+## Audio Input Sensors
+
+### Initialization
+
+```js
+await enableAudioIn()
+```
+
+Request microphone access and start analysis.
+
+```js
+disableAudioIn()
+```
+
+Stop microphone and release resources.
+
+### Volume Signals
+
+- `audioInVolume` - RMS volume (0-1)
+- `audioInPeak` - Peak amplitude (0-1)
+- `audioInEnvelope` - Smoothed envelope (0-1)
+
+```js
+// Volume-controlled dynamics
+s("bd*4")
+  .gain(audioInVolume)
+  .lpf(audioInEnvelope.range(500, 5000))
+```
+
+### Pitch Signals
+
+- `audioInPitch` - Detected pitch in Hz
+- `audioInNote` - Detected pitch as MIDI note number
+
+```js
+// Voice-following synth
+note(audioInNote)
+  .s("sine")
+  .gain(audioInVolume)
+```
+
+### Spectral Signals
+
+Frequency analysis:
+
+- `audioInBass` - Low frequency energy (20-250 Hz, 0-1)
+- `audioInMid` - Mid frequency energy (250-2000 Hz, 0-1)
+- `audioInHigh` - High frequency energy (2000-20000 Hz, 0-1)
+- `audioInCentroid` - Spectral centroid/brightness (0-1)
+- `audioInFlux` - Spectral flux/change rate (0-1)
+
+```js
+// Spectral painting
+stack(
+  s("sine").note(audioInBass.range(30, 40)),
+  s("triangle").note(audioInMid.range(50, 70)),
+  s("sawtooth").note(audioInHigh.range(70, 90))
+)
+```
+
+### Rhythm Signals
+
+- `audioInOnset` - Beat/onset detection (0 or 1)
+
+```js
+// Beat-reactive drums
+s("bd sd hh sd")
+  .struct(audioInOnset)
+```
+
+### Functions
+
+```js
+audioInGate(threshold)
+```
+
+Binary gate based on volume threshold.
+
+```js
+audioInBands(n)
+```
+
+Split spectrum into N frequency bands.
+
+```js
+// Use 8 frequency bands
+const bands = audioInBands(8)
+note(bands[0].range(48, 72))
+  .s("sine")
+```
+
+## Face Tracking
+
+Face tracking uses [MediaPipe](https://developers.google.com/mediapipe) for real-time facial feature detection.
+
+### Initialization
+
+```js
+await enableFaceTracking()
+```
+
+Loads MediaPipe model and starts face tracking. First load may take a few seconds.
+
+```js
+disableFaceTracking()
+```
+
+### Position Signals
+
+- `faceX` - Face center X (0-1, left to right)
+- `faceY` - Face center Y (0-1, top to bottom)
+- `faceSize` - Face size/distance (0-1)
+
+```js
+// Face theremin
+note(faceX.range(48, 84))
+  .s("sawtooth")
+  .lpf(faceY.range(200, 5000))
+  .gain(faceSize)
+```
+
+### Rotation Signals
+
+- `faceRotX` - Pitch/nodding (0-1)
+- `faceRotY` - Yaw/head shake (0-1)
+- `faceRotZ` - Roll/head tilt (0-1)
+
+```js
+// Head tilt controls harmony
+note("<c e g b>")
+  .add(faceRotZ.range(-7, 7).floor())
+  .s("piano")
+```
+
+### Expression Signals
+
+- `faceMouthOpen` - Mouth openness (0-1)
+- `faceSmile` - Smile amount (0-1)
+- `faceEyebrowRaise` - Eyebrow raise (0-1)
+- `faceCount` - Number of faces detected
+
+```js
+// Mouth controls filter
+s("sine")
+  .note(60)
+  .lpf(faceMouthOpen.range(200, 5000))
+  .room(faceSmile.range(0, 0.8))
+```
+
+## Hand Tracking
+
+Hand tracking uses MediaPipe for gesture recognition.
+
+### Initialization
+
+```js
+await enableHandTracking()
+```
+
+### Signals
+
+- `handX` - Hand center X (0-1)
+- `handY` - Hand center Y (0-1)
+- `handOpenness` - Hand open vs closed (0-1)
+- `handPinch` - Pinch gesture (0-1)
+- `handCount` - Number of hands detected
+
+```js
+// Hand position controls sound
+note(handY.range(48, 72))
+  .s("triangle")
+  .pan(handX)
+  .lpf(handOpenness.range(500, 5000))
+  .room(handPinch)
+```
+
+## Pose Tracking
+
+Full-body pose tracking with MediaPipe.
+
+### Initialization
+
+```js
+await enablePoseTracking()
+```
+
+### Signals
+
+- `poseX` - Body center X (0-1)
+- `poseY` - Body center Y (0-1)
+- `poseSpread` - Arm spread width (0-1)
+- `poseHeight` - Body height in frame (0-1)
+- `poseLeftArmAngle` - Left arm angle (0-1)
+- `poseRightArmAngle` - Right arm angle (0-1)
+
+```js
+// Full-body theremin
+note(poseX.range(36, 84))
+  .s("sawtooth")
+  .lpf(poseY.range(200, 8000))
+  .gain(poseSpread)
+  .delay(poseHeight.range(0, 0.5))
+```
+
+## Creative Examples
+
+### Multi-Modal Performance
+
+Combine all sensors for a rich interactive experience:
+
+```js
+// Initialize everything
+await Promise.all([
+  enableWebcam(),
+  enableAudioIn(),
+  enableFaceTracking()
+])
+
+stack(
+  // Voice sets melody
+  note(audioInNote)
+    .s(camColorH.choose("sine", "triangle", "sawtooth"))
+    .when(() => audioInVolume.gt(0.1)),
+  
+  // Face controls harmony
+  note(faceX.range(48, 72))
+    .add(faceRotZ.range(-7, 7).floor())
+    .s("square")
+    .lpf(faceMouthOpen.range(500, 5000)),
+  
+  // Motion triggers rhythm
+  s("bd sd hh sd")
+    .fast(camMotion.range(1, 4))
+    .gain(audioInBass.range(0.5, 1))
+)
+```
+
+### Ambient Colorscape
+
+Slow, generative patterns shaped by visual input:
+
+```js
+await enableWebcam()
+
+stack(
+  note(camColorH.slow(8).range(0, 12))
+    .scale("C:minor:pentatonic")
+    .s("sine")
+    .room(camColorS)
+    .delay(camColorL.range(0, 0.5)),
+  
+  note(camBrightness.slow(16).range(0, 7))
+    .scale("C:minor:pentatonic")
+    .s("triangle")
+    .slow(2)
+)
+```
+
+### Voice-Following Harmony
+
+Your voice creates a rich harmonic texture:
+
+```js
+await enableAudioIn()
+
+note(audioInNote)
+  .s("sine")
+  .stack(
+    note(audioInNote.add(7)).gain(audioInVolume.mul(0.5)),
+    note(audioInNote.sub(12)).gain(audioInVolume.mul(0.3)),
+    note(audioInNote.add(12)).gain(audioInVolume.mul(0.2))
+  )
+  .lpf(audioInCentroid.range(500, 5000))
+  .room(audioInFlux.range(0, 0.5))
+```
+
+## Performance Tips
+
+1. **Lower resolution** - Webcam runs at 320x240 for better performance
+2. **One sensor at a time** - Each sensor requires processing power
+3. **Combine wisely** - Use `Promise.all()` to initialize multiple sensors
+4. **Smooth signals** - Use `.slow()` for less jittery control
+5. **Threshold** - Use `.gt()`, `.lt()` for cleaner triggers
+6. **Good lighting** - Helps camera-based tracking
+7. **Clear background** - Improves ML vision accuracy
+
+## Browser Support
+
+- **Webcam & Audio**: All modern browsers with getUserMedia support
+- **ML Vision**: Requires WebGL and WASM
+  - Chrome/Edge: ✅ Full support
+  - Firefox: ✅ Full support  
+  - Safari: ⚠️ Partial support
+
+**Note**: Camera and microphone access require HTTPS or localhost.
+
+## Examples
+
+Check out the [sensor demos](https://github.com/tidalcycles/strudel/tree/main/examples/sensors-demo) for complete working examples!
+

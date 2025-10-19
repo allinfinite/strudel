@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strudel Webcam Sensors Demo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .stop-btn {
+      background: #f44336;
+    }
+    .stop-btn:hover {
+      background: #da190b;
+    }
+    .info {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .sensor-value {
+      background: #333;
+      padding: 12px;
+      border-radius: 6px;
+    }
+    .sensor-value label {
+      display: block;
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .sensor-value .value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    .example-code {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .example-code h3 {
+      margin-top: 0;
+    }
+    pre {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    code {
+      color: #a9dc76;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📷 Strudel Webcam Sensors Demo</h1>
+    
+    <div class="controls">
+      <button id="startBtn">Start Webcam & Play</button>
+      <button id="stopBtn" class="stop-btn" disabled>Stop</button>
+    </div>
+    
+    <div class="info">
+      <h3>Live Sensor Values</h3>
+      <div class="sensor-grid">
+        <div class="sensor-value">
+          <label>Color R</label>
+          <div class="value" id="colorR">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Color G</label>
+          <div class="value" id="colorG">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Color B</label>
+          <div class="value" id="colorB">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Hue</label>
+          <div class="value" id="colorH">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Brightness</label>
+          <div class="value" id="brightness">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Motion</label>
+          <div class="value" id="motion">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Motion X</label>
+          <div class="value" id="motionX">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Motion Y</label>
+          <div class="value" id="motionY">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Edge Amount</label>
+          <div class="value" id="edgeAmount">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Contrast</label>
+          <div class="value" id="contrast">0.00</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="example-code">
+      <h3>🎵 Active Pattern</h3>
+      <pre><code>// Color-controlled melody
+note(camColorH.range(0, 12))
+  .scale("C:major")
+  .s("triangle")
+  .lpf(camBrightness.range(500, 5000))
+  // Motion controls speed
+  .fast(camMotion.range(1, 4))
+  // Edge detection adds texture
+  .room(camEdgeAmount.range(0, 0.8))</code></pre>
+    </div>
+    
+    <div class="example-code">
+      <h3>More Examples</h3>
+      <pre><code>// RGB to note triads
+stack(
+  note(camColorR.range(0, 12)),
+  note(camColorG.range(0, 12)),
+  note(camColorB.range(0, 12))
+).scale("C:major").s("sine")
+
+// Motion-reactive drums
+s("bd sd hh sd")
+  .fast(camMotion.range(1, 4))
+  .gain(camBrightness.range(0.5, 1))
+
+// Ambient colorscape
+note(camColorH.slow(8).range(0, 12))
+  .scale("C:minor:pentatonic")
+  .s("sine")
+  .room(camColorS)
+  .delay(camColorL.range(0, 0.5))</code></pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initAudio } from 'https://unpkg.com/@strudel/superdough';
+    import { evalScope, hush } from 'https://unpkg.com/@strudel/core';
+    import * as tonal from 'https://unpkg.com/@strudel/tonal';
+    import * as mini from 'https://unpkg.com/@strudel/mini';
+    import * as sensors from '../../packages/sensors/index.mjs';
+    
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    
+    let pattern;
+    
+    // Update display
+    function updateDisplay() {
+      document.getElementById('colorR').textContent = sensors.camColorR.valueOf().toFixed(2);
+      document.getElementById('colorG').textContent = sensors.camColorG.valueOf().toFixed(2);
+      document.getElementById('colorB').textContent = sensors.camColorB.valueOf().toFixed(2);
+      document.getElementById('colorH').textContent = sensors.camColorH.valueOf().toFixed(2);
+      document.getElementById('brightness').textContent = sensors.camBrightness.valueOf().toFixed(2);
+      document.getElementById('motion').textContent = sensors.camMotion.valueOf().toFixed(2);
+      document.getElementById('motionX').textContent = sensors.camMotionX.valueOf().toFixed(2);
+      document.getElementById('motionY').textContent = sensors.camMotionY.valueOf().toFixed(2);
+      document.getElementById('edgeAmount').textContent = sensors.camEdgeAmount.valueOf().toFixed(2);
+      document.getElementById('contrast').textContent = sensors.camContrast.valueOf().toFixed(2);
+      
+      requestAnimationFrame(updateDisplay);
+    }
+    
+    startBtn.addEventListener('click', async () => {
+      try {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Initializing...';
+        
+        // Initialize audio and webcam
+        await initAudio();
+        await sensors.enableWebcam();
+        
+        // Set up scope with all functions
+        await evalScope(mini, tonal, sensors);
+        
+        // Create and play pattern
+        pattern = sensors.note(sensors.camColorH.range(0, 12))
+          .scale("C:major")
+          .s("triangle")
+          .lpf(sensors.camBrightness.range(500, 5000))
+          .fast(sensors.camMotion.range(1, 4))
+          .room(sensors.camEdgeAmount.range(0, 0.8));
+        
+        pattern.play();
+        
+        // Start display update
+        updateDisplay();
+        
+        startBtn.textContent = '✓ Playing';
+        stopBtn.disabled = false;
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start: ' + error.message);
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start Webcam & Play';
+      }
+    });
+    
+    stopBtn.addEventListener('click', () => {
+      hush();
+      sensors.disableWebcam();
+      stopBtn.disabled = true;
+      startBtn.disabled = false;
+      startBtn.textContent = 'Start Webcam & Play';
+    });
+  </script>
+</body>
+</html>
+

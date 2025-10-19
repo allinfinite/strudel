@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strudel Audio Input Sensors Demo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #0b7dda;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .stop-btn {
+      background: #f44336;
+    }
+    .stop-btn:hover {
+      background: #da190b;
+    }
+    .info {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .sensor-value {
+      background: #333;
+      padding: 12px;
+      border-radius: 6px;
+    }
+    .sensor-value label {
+      display: block;
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .sensor-value .value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2196F3;
+    }
+    .example-code {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .example-code h3 {
+      margin-top: 0;
+    }
+    pre {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    code {
+      color: #78dce8;
+    }
+    .tip {
+      background: #3a3a00;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #ffc107;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎤 Strudel Audio Input Sensors Demo</h1>
+    
+    <div class="controls">
+      <button id="startBtn">Start Microphone & Play</button>
+      <button id="stopBtn" class="stop-btn" disabled>Stop</button>
+    </div>
+    
+    <div class="tip">
+      <strong>💡 Tip:</strong> Sing, hum, whistle, or make sounds into your microphone! 
+      The demo will follow your pitch and respond to your voice.
+    </div>
+    
+    <div class="info">
+      <h3>Live Sensor Values</h3>
+      <div class="sensor-grid">
+        <div class="sensor-value">
+          <label>Volume</label>
+          <div class="value" id="volume">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Envelope</label>
+          <div class="value" id="envelope">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Pitch (Hz)</label>
+          <div class="value" id="pitch">0</div>
+        </div>
+        <div class="sensor-value">
+          <label>Note</label>
+          <div class="value" id="note">0</div>
+        </div>
+        <div class="sensor-value">
+          <label>Bass</label>
+          <div class="value" id="bass">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Mid</label>
+          <div class="value" id="mid">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>High</label>
+          <div class="value" id="high">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Centroid</label>
+          <div class="value" id="centroid">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Flux</label>
+          <div class="value" id="flux">0.00</div>
+        </div>
+        <div class="sensor-value">
+          <label>Onset</label>
+          <div class="value" id="onset">0</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="example-code">
+      <h3>🎵 Active Pattern</h3>
+      <pre><code>// Voice-following synthesizer
+note(audioInNote)
+  .s("sine")
+  .gain(audioInEnvelope.range(0.5, 1))
+  .lpf(audioInCentroid.range(500, 5000))
+  // Add harmony based on volume
+  .stack(
+    note(audioInNote.add(7))
+      .s("triangle")
+      .gain(audioInVolume.mul(0.4)),
+    note(audioInNote.sub(12))
+      .s("sawtooth")
+      .gain(audioInVolume.mul(0.3))
+  )</code></pre>
+    </div>
+    
+    <div class="example-code">
+      <h3>More Examples</h3>
+      <pre><code>// Spectral painter - different frequencies control different layers
+stack(
+  s("sine").note(audioInBass.range(30, 40)),
+  s("triangle").note(audioInMid.range(50, 70)),
+  s("sawtooth").note(audioInHigh.range(70, 90))
+)
+
+// Beat-reactive drums
+s("bd sd hh sd")
+  .struct(audioInOnset)
+  .gain(audioInVolume)
+
+// Vocal theremin
+note(audioInNote)
+  .s("sawtooth")
+  .lpf(audioInCentroid.range(200, 5000))
+  .room(audioInFlux)
+  .delay(audioInEnvelope.range(0, 0.5))</code></pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initAudio } from 'https://unpkg.com/@strudel/superdough';
+    import { evalScope, hush } from 'https://unpkg.com/@strudel/core';
+    import * as tonal from 'https://unpkg.com/@strudel/tonal';
+    import * as mini from 'https://unpkg.com/@strudel/mini';
+    import * as sensors from '../../packages/sensors/index.mjs';
+    
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    
+    let pattern;
+    
+    // Update display
+    function updateDisplay() {
+      document.getElementById('volume').textContent = sensors.audioInVolume.valueOf().toFixed(2);
+      document.getElementById('envelope').textContent = sensors.audioInEnvelope.valueOf().toFixed(2);
+      document.getElementById('pitch').textContent = Math.round(sensors.audioInPitch.valueOf());
+      document.getElementById('note').textContent = sensors.audioInNote.valueOf().toFixed(1);
+      document.getElementById('bass').textContent = sensors.audioInBass.valueOf().toFixed(2);
+      document.getElementById('mid').textContent = sensors.audioInMid.valueOf().toFixed(2);
+      document.getElementById('high').textContent = sensors.audioInHigh.valueOf().toFixed(2);
+      document.getElementById('centroid').textContent = sensors.audioInCentroid.valueOf().toFixed(2);
+      document.getElementById('flux').textContent = sensors.audioInFlux.valueOf().toFixed(2);
+      document.getElementById('onset').textContent = sensors.audioInOnset.valueOf();
+      
+      requestAnimationFrame(updateDisplay);
+    }
+    
+    startBtn.addEventListener('click', async () => {
+      try {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Initializing...';
+        
+        // Initialize audio and microphone
+        await initAudio();
+        await sensors.enableAudioIn();
+        
+        // Set up scope with all functions
+        await evalScope(mini, tonal, sensors);
+        
+        // Create and play pattern
+        pattern = sensors.note(sensors.audioInNote)
+          .s("sine")
+          .gain(sensors.audioInEnvelope.range(0.5, 1))
+          .lpf(sensors.audioInCentroid.range(500, 5000))
+          .stack(
+            sensors.note(sensors.audioInNote.add(7))
+              .s("triangle")
+              .gain(sensors.audioInVolume.mul(0.4)),
+            sensors.note(sensors.audioInNote.sub(12))
+              .s("sawtooth")
+              .gain(sensors.audioInVolume.mul(0.3))
+          );
+        
+        pattern.play();
+        
+        // Start display update
+        updateDisplay();
+        
+        startBtn.textContent = '✓ Playing';
+        stopBtn.disabled = false;
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start: ' + error.message);
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start Microphone & Play';
+      }
+    });
+    
+    stopBtn.addEventListener('click', () => {
+      hush();
+      sensors.disableAudioIn();
+      stopBtn.disabled = true;
+      startBtn.disabled = false;
+      startBtn.textContent = 'Start Microphone & Play';
+    });
+  </script>
+</body>
+</html>
+

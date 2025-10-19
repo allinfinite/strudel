@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Strudel Audio-Reactive Webcam Music</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      background: #000;
+      color: #0f0;
+    }
+    
+    #container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #0f0;
+      text-shadow: 0 0 10px #0f0;
+    }
+    
+    #controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin: 20px 0;
+    }
+    
+    button {
+      background: #000;
+      border: 2px solid #0f0;
+      color: #0f0;
+      padding: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    
+    button:hover {
+      background: #0f0;
+      color: #000;
+      box-shadow: 0 0 20px #0f0;
+    }
+    
+    button.active {
+      background: #0f0;
+      color: #000;
+    }
+    
+    #video {
+      width: 320px;
+      height: 240px;
+      border: 2px solid #0f0;
+      box-shadow: 0 0 20px #0f0;
+    }
+    
+    #info {
+      margin-top: 20px;
+      padding: 20px;
+      border: 2px solid #0f0;
+      background: rgba(0, 255, 0, 0.05);
+    }
+    
+    .section {
+      margin: 20px 0;
+      padding: 10px;
+      border: 1px solid #0f0;
+    }
+    
+    .section h3 {
+      margin-top: 0;
+      color: #0f0;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>🎵 Audio-Reactive Webcam Music System 🎵</h1>
+    
+    <div class="section">
+      <h3>1. Initialize</h3>
+      <div id="controls">
+        <button onclick="initWebcam()">Enable Webcam</button>
+        <button onclick="initAudio()">Enable Microphone</button>
+        <button onclick="initSystem()">Initialize Audio System</button>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h3>2. Webcam-Only Layers</h3>
+      <div id="controls">
+        <button onclick="toggleAmbient()">Ambient Textures</button>
+        <button onclick="toggleChords()">Chord Pads</button>
+        <button onclick="toggleBass()">Bass Line</button>
+        <button onclick="toggleArp()">Arpeggiator</button>
+        <button onclick="toggleBeat()">Drums</button>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h3>3. Audio-Reactive Layers 🎤</h3>
+      <div id="controls">
+        <button onclick="toggleAudioMelody()">Audio Melody</button>
+        <button onclick="toggleAudioPercussion()">Audio Percussion</button>
+        <button onclick="toggleAudioReactive()">Audio Effects</button>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h3>4. Quick Start</h3>
+      <div id="controls">
+        <button onclick="startFull()">Start Full Music</button>
+        <button onclick="startFullAudioReactive()">Start Audio-Reactive</button>
+        <button onclick="stopAll()">Stop Everything</button>
+      </div>
+    </div>
+    
+    <div id="info">
+      <h3>How to Use:</h3>
+      <ol>
+        <li><strong>Enable Webcam</strong> - Allow camera access</li>
+        <li><strong>Enable Microphone</strong> - Allow microphone access</li>
+        <li><strong>Initialize Audio System</strong> - Set up the music engine</li>
+        <li><strong>Add layers</strong> - Click buttons to add/remove musical layers</li>
+        <li><strong>Interact:</strong>
+          <ul>
+            <li>🎨 <strong>Wave colorful objects</strong> → Changes scales and melodies</li>
+            <li>💡 <strong>Adjust lighting</strong> → Controls filters and brightness</li>
+            <li>🏃 <strong>Move around</strong> → Controls tempo and dynamics</li>
+            <li>🎤 <strong>Speak/Sing/Play</strong> → Creates reactive melodies and percussion</li>
+            <li>🔊 <strong>Make loud sounds</strong> → Triggers drums</li>
+            <li>🎵 <strong>Whistle/Hum</strong> → Creates melodic responses</li>
+          </ul>
+        </li>
+      </ol>
+      
+      <h3>Musical Layers:</h3>
+      <ul>
+        <li><strong>Ambient Textures</strong> - Evolving, randomized soundscapes</li>
+        <li><strong>Chord Pads</strong> - Harmonic progressions (changes every 2 seconds)</li>
+        <li><strong>Bass Line</strong> - Groovy bass patterns</li>
+        <li><strong>Arpeggiator</strong> - Melodic note sequences</li>
+        <li><strong>Drums</strong> - Kick, snare, hi-hat patterns</li>
+        <li><strong>Audio Melody</strong> 🎤 - Responds to pitch and volume of your voice/instruments</li>
+        <li><strong>Audio Percussion</strong> 🎤 - Drums triggered by bass/treble frequencies</li>
+        <li><strong>Audio Effects</strong> 🎤 - Filter sweeps based on audio spectrum</li>
+      </ul>
+    </div>
+    
+    <video id="video" autoplay playsinline></video>
+  </div>
+  
+  <script type="module">
+    import { enableWebcam, enableAudioIn, startWebcamAudio, stopWebcamAudio,
+             startAmbient, stopAmbient, startChords, stopChords,
+             startBass, stopBass, startArp, stopArp, startBeat, stopBeat,
+             startAudioMelody, stopAudioMelody, startAudioPercussion, stopAudioPercussion,
+             startAudioReactive, stopAudioReactive, startFullMusic, startFullAudioReactive
+           } from '../../packages/sensors/index.mjs';
+    
+    // State tracking
+    let states = {
+      ambient: false,
+      chords: false,
+      bass: false,
+      arp: false,
+      beat: false,
+      audioMelody: false,
+      audioPercussion: false,
+      audioReactive: false
+    };
+    
+    window.initWebcam = async function() {
+      try {
+        await enableWebcam();
+        const video = document.getElementById('video');
+        // The video stream is already set by enableWebcam
+        alert('Webcam enabled! You should see yourself in the video.');
+      } catch (e) {
+        alert('Error enabling webcam: ' + e.message);
+      }
+    };
+    
+    window.initAudio = async function() {
+      try {
+        await enableAudioIn();
+        alert('Microphone enabled! Speak/sing/play to control the music.');
+      } catch (e) {
+        alert('Error enabling microphone: ' + e.message);
+      }
+    };
+    
+    window.initSystem = async function() {
+      try {
+        await startWebcamAudio();
+        alert('Audio system initialized! Now add musical layers.');
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    };
+    
+    function toggleButton(button) {
+      button.classList.toggle('active');
+    }
+    
+    window.toggleAmbient = function() {
+      states.ambient = !states.ambient;
+      if (states.ambient) startAmbient();
+      else stopAmbient();
+      toggleButton(event.target);
+    };
+    
+    window.toggleChords = function() {
+      states.chords = !states.chords;
+      if (states.chords) startChords();
+      else stopChords();
+      toggleButton(event.target);
+    };
+    
+    window.toggleBass = function() {
+      states.bass = !states.bass;
+      if (states.bass) startBass();
+      else stopBass();
+      toggleButton(event.target);
+    };
+    
+    window.toggleArp = function() {
+      states.arp = !states.arp;
+      if (states.arp) startArp();
+      else stopArp();
+      toggleButton(event.target);
+    };
+    
+    window.toggleBeat = function() {
+      states.beat = !states.beat;
+      if (states.beat) startBeat();
+      else stopBeat();
+      toggleButton(event.target);
+    };
+    
+    window.toggleAudioMelody = function() {
+      states.audioMelody = !states.audioMelody;
+      if (states.audioMelody) startAudioMelody();
+      else stopAudioMelody();
+      toggleButton(event.target);
+    };
+    
+    window.toggleAudioPercussion = function() {
+      states.audioPercussion = !states.audioPercussion;
+      if (states.audioPercussion) startAudioPercussion();
+      else stopAudioPercussion();
+      toggleButton(event.target);
+    };
+    
+    window.toggleAudioReactive = function() {
+      states.audioReactive = !states.audioReactive;
+      if (states.audioReactive) startAudioReactive();
+      else stopAudioReactive();
+      toggleButton(event.target);
+    };
+    
+    window.startFull = async function() {
+      await startFullMusic();
+    };
+    
+    window.startFullAudioReactive = async function() {
+      await startFullAudioReactive();
+    };
+    
+    window.stopAll = function() {
+      stopWebcamAudio();
+      states = Object.fromEntries(Object.keys(states).map(k => [k, false]));
+      document.querySelectorAll('button.active').forEach(btn => btn.classList.remove('active'));
+    };
+  </script>
+</body>
+</html>
+

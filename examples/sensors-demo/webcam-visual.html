@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Webcam Music - Visual Interface</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+    
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #video {
+      display: none;
+    }
+    
+    #silhouetteCanvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: blur(2px) contrast(1.2);
+    }
+    
+    #oscillatorCanvas {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 30vh;
+      opacity: 0.8;
+    }
+    
+    #controls {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+    }
+    
+    button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      color: white;
+      padding: 12px 24px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+    
+    button:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: white;
+    }
+    
+    button.active {
+      background: white;
+      color: black;
+      border-color: white;
+    }
+    
+    #info {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      color: white;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px 20px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      font-size: 14px;
+    }
+    
+    #mode {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+    
+    .mode-ambient { color: #3498db; }
+    .mode-melodic { color: #9b59b6; }
+    .mode-energetic { color: #e74c3c; }
+    .mode-chaotic { color: #f39c12; }
+    .mode-minimal { color: #95a5a6; }
+    
+    #stats {
+      font-size: 11px;
+      opacity: 0.7;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="silhouetteCanvas"></canvas>
+    <canvas id="oscillatorCanvas"></canvas>
+  </div>
+  
+  <div id="controls">
+    <button id="startBtn" onclick="start()">▶ Play</button>
+    <button id="stopBtn" onclick="stop()" style="display:none;">■ Stop</button>
+  </div>
+  
+  <div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px; text-align: center; display: none;">
+    <div style="margin-bottom: 20px;">Loading...</div>
+    <div style="font-size: 14px; opacity: 0.7;">Starting webcam and audio system</div>
+  </div>
+  
+  <div id="info" style="display:none;">
+    <div id="mode" class="mode-energetic">ENERGETIC</div>
+    <div id="stats">
+      Brightness: <span id="brightness">0</span><br>
+      Motion: <span id="motion">0</span><br>
+      Saturation: <span id="saturation">0</span>
+    </div>
+  </div>
+  
+  <script type="module">
+    import { enableWebcam, startWebcamMusic, stopWebcamAudio, 
+             getCurrentMode, webcam } from '../../packages/sensors/index.mjs';
+    
+    let animationFrame = null;
+    let modeCheckInterval = null;
+    
+    const video = document.getElementById('video');
+    const silhouetteCanvas = document.getElementById('silhouetteCanvas');
+    const oscillatorCanvas = document.getElementById('oscillatorCanvas');
+    const silhouetteCtx = silhouetteCanvas.getContext('2d');
+    const oscillatorCtx = oscillatorCanvas.getContext('2d');
+    
+    // Set canvas sizes
+    function resizeCanvases() {
+      silhouetteCanvas.width = Math.min(window.innerWidth * 0.8, 960);
+      silhouetteCanvas.height = silhouetteCanvas.width * 0.75;
+      
+      oscillatorCanvas.width = window.innerWidth;
+      oscillatorCanvas.height = window.innerHeight * 0.3;
+    }
+    resizeCanvases();
+    window.addEventListener('resize', resizeCanvases);
+    
+    // Motion history for oscillator
+    let motionHistory = new Array(200).fill(0);
+    let brightnessHistory = new Array(200).fill(0);
+    let hueHistory = new Array(200).fill(0);
+    
+    window.start = async function() {
+      try {
+        // Show loading
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('startBtn').style.display = 'none';
+        
+        // Enable webcam
+        await enableWebcam();
+        
+        // Wait a moment for video to be ready
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Start music
+        await startWebcamMusic();
+        
+        // Hide loading, show stop button
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'inline-block';
+        document.getElementById('info').style.display = 'block';
+        
+        // Start visualizations
+        startVisualization();
+        startModeMonitoring();
+        
+      } catch (e) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('startBtn').style.display = 'inline-block';
+        alert('Error: ' + e.message + '\n\nMake sure to allow camera access!');
+      }
+    };
+    
+    window.stop = function() {
+      stopWebcamAudio();
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      if (modeCheckInterval) clearInterval(modeCheckInterval);
+      
+      // Clear canvases
+      silhouetteCtx.clearRect(0, 0, silhouetteCanvas.width, silhouetteCanvas.height);
+      oscillatorCtx.clearRect(0, 0, oscillatorCanvas.width, oscillatorCanvas.height);
+      
+      // Reset histories
+      motionHistory = new Array(200).fill(0);
+      brightnessHistory = new Array(200).fill(0);
+      hueHistory = new Array(200).fill(0);
+      
+      document.getElementById('startBtn').style.display = 'inline-block';
+      document.getElementById('stopBtn').style.display = 'none';
+      document.getElementById('info').style.display = 'none';
+    };
+    
+    function startVisualization() {
+      function render() {
+        if (webcam && webcam.isInitialized && webcam.video.readyState >= 2) {
+          drawSilhouette();
+          drawOscillator();
+          updateStats();
+        }
+        animationFrame = requestAnimationFrame(render);
+      }
+      render();
+    }
+    
+    function drawSilhouette() {
+      const w = silhouetteCanvas.width;
+      const h = silhouetteCanvas.height;
+      
+      // Draw mirrored video
+      silhouetteCtx.save();
+      silhouetteCtx.scale(-1, 1);
+      silhouetteCtx.drawImage(webcam.video, -w, 0, w, h);
+      silhouetteCtx.restore();
+      
+      // Get image data
+      const imageData = silhouetteCtx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+      
+      // Create silhouette effect based on brightness threshold
+      const brightness = webcam._brightness || 0.5;
+      const motion = webcam._motion || 0;
+      const saturation = webcam._color?.s || 0;
+      
+      // Threshold for silhouette (adaptive based on brightness)
+      const threshold = brightness * 255 * 0.7;
+      
+      // Get current mode color
+      const mode = getCurrentMode();
+      let color = [255, 255, 255]; // white
+      
+      if (mode === 'ambient') color = [52, 152, 219]; // blue
+      else if (mode === 'melodic') color = [155, 89, 182]; // purple
+      else if (mode === 'energetic') color = [231, 76, 60]; // red
+      else if (mode === 'chaotic') color = [243, 156, 18]; // orange
+      else if (mode === 'minimal') color = [149, 165, 166]; // gray
+      
+      // Apply silhouette effect with color tinting
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const avg = (r + g + b) / 3;
+        
+        if (avg > threshold) {
+          // Bright areas - colored silhouette
+          const intensity = (avg - threshold) / (255 - threshold);
+          data[i] = color[0] * intensity;
+          data[i + 1] = color[1] * intensity;
+          data[i + 2] = color[2] * intensity;
+          data[i + 3] = 255 * intensity * (0.5 + saturation * 0.5);
+        } else {
+          // Dark areas - black
+          data[i] = 0;
+          data[i + 1] = 0;
+          data[i + 2] = 0;
+          data[i + 3] = 255 * 0.3;
+        }
+      }
+      
+      silhouetteCtx.putImageData(imageData, 0, 0);
+      
+      // Add motion blur effect
+      silhouetteCtx.globalCompositeOperation = 'screen';
+      silhouetteCtx.globalAlpha = motion * 0.3;
+      silhouetteCtx.filter = 'blur(10px)';
+      silhouetteCtx.drawImage(silhouetteCanvas, 0, 0);
+      silhouetteCtx.filter = 'none';
+      silhouetteCtx.globalAlpha = 1;
+      silhouetteCtx.globalCompositeOperation = 'source-over';
+    }
+    
+    function drawOscillator() {
+      const w = oscillatorCanvas.width;
+      const h = oscillatorCanvas.height;
+      
+      // Update histories
+      const motion = webcam._motion || 0;
+      const brightness = webcam._brightness || 0;
+      const hue = webcam._color?.h || 0;
+      
+      motionHistory.push(motion);
+      brightnessHistory.push(brightness);
+      hueHistory.push(hue);
+      
+      if (motionHistory.length > 200) motionHistory.shift();
+      if (brightnessHistory.length > 200) brightnessHistory.shift();
+      if (hueHistory.length > 200) hueHistory.shift();
+      
+      // Clear canvas
+      oscillatorCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      oscillatorCtx.fillRect(0, 0, w, h);
+      
+      const step = w / motionHistory.length;
+      
+      // Draw motion waveform
+      oscillatorCtx.strokeStyle = '#e74c3c';
+      oscillatorCtx.lineWidth = 3;
+      oscillatorCtx.beginPath();
+      motionHistory.forEach((val, i) => {
+        const x = i * step;
+        const y = h - (val * h * 0.8) - h * 0.1;
+        if (i === 0) oscillatorCtx.moveTo(x, y);
+        else oscillatorCtx.lineTo(x, y);
+      });
+      oscillatorCtx.stroke();
+      
+      // Draw brightness waveform
+      oscillatorCtx.strokeStyle = '#f39c12';
+      oscillatorCtx.lineWidth = 2;
+      oscillatorCtx.beginPath();
+      brightnessHistory.forEach((val, i) => {
+        const x = i * step;
+        const y = h - (val * h * 0.6) - h * 0.2;
+        if (i === 0) oscillatorCtx.moveTo(x, y);
+        else oscillatorCtx.lineTo(x, y);
+      });
+      oscillatorCtx.stroke();
+      
+      // Draw hue as color gradient at bottom
+      const gradient = oscillatorCtx.createLinearGradient(0, h - 20, w, h - 20);
+      hueHistory.forEach((val, i) => {
+        const position = i / hueHistory.length;
+        const hueValue = Math.floor(val * 360);
+        gradient.addColorStop(position, `hsla(${hueValue}, 70%, 50%, 0.6)`);
+      });
+      oscillatorCtx.fillStyle = gradient;
+      oscillatorCtx.fillRect(0, h - 30, w, 30);
+      
+      // Add grid lines
+      oscillatorCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      oscillatorCtx.lineWidth = 1;
+      for (let i = 0; i < 5; i++) {
+        const y = (h / 5) * i;
+        oscillatorCtx.beginPath();
+        oscillatorCtx.moveTo(0, y);
+        oscillatorCtx.lineTo(w, y);
+        oscillatorCtx.stroke();
+      }
+    }
+    
+    function updateStats() {
+      const brightness = webcam._brightness || 0;
+      const motion = webcam._motion || 0;
+      const saturation = webcam._color?.s || 0;
+      
+      document.getElementById('brightness').textContent = (brightness * 100).toFixed(0) + '%';
+      document.getElementById('motion').textContent = (motion * 100).toFixed(0) + '%';
+      document.getElementById('saturation').textContent = (saturation * 100).toFixed(0) + '%';
+    }
+    
+    function startModeMonitoring() {
+      modeCheckInterval = setInterval(() => {
+        const mode = getCurrentMode();
+        const modeEl = document.getElementById('mode');
+        modeEl.textContent = mode.toUpperCase();
+        modeEl.className = `mode-${mode}`;
+      }, 100);
+    }
+  </script>
+</body>
+</html>
+
