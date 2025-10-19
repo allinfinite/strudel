@@ -37,3 +37,6 @@ class DoughProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('dough-processor', DoughProcessor);
+
+// Export the file URL as default for AudioWorklet registration
+export default new URL('./dough-worklet.mjs', import.meta.url);
