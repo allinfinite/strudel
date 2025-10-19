@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter website run build && ROOT=$PWD; if [ -d website ]; then ROOT=$PWD; elif [ -d ../website ]; then ROOT=$(cd .. && pwd); fi; DEST=$ROOT/.vercel/output/static; mkdir -p \"$DEST\"; cp -R \"$ROOT/website/dist\"/. \"$DEST\"; mkdir -p \"$ROOT/.vercel/output\"; echo '{\"version\":3}' > \"$ROOT/.vercel/output/config.json\"",
+  "buildCommand": "bash tools/vercel-build.sh",
   "installCommand": "pnpm install && pnpm -w run jsdoc-json",
   "framework": null
 }
