@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bash tools/vercel-build.sh || bash ../tools/vercel-build.sh",
+  "buildCommand": "pnpm --filter website build && mkdir -p .vercel/output/static && cp -r website/dist/. .vercel/output/static && echo '{\"version\":3}' > .vercel/output/config.json",
   "installCommand": "pnpm install && pnpm -w run jsdoc-json",
   "framework": null
 }
