@@ -8,7 +8,7 @@ function bundleAudioWorkletPlugin() /* : PluginOption */ {
   return {
     name: 'vite-plugin-bundle-audioworklet',
     /* apply: 'build', */
-    enforce: 'post',
+    enforce: 'pre',
 
     config(config) {
       viteConfig = config;
