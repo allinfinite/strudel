@@ -395,7 +395,7 @@ const currentPage = Astro.url.pathname;
         // Musical structure
         this.currentMusicMode = 'sparse';
         this.lastModeChange = 0;
-        this.modeChangeCooldown = 2000; // 2 seconds
+        this.modeChangeCooldown = 8000; // 8 seconds - longer cooldown for stability
         
         // Harmonic system
         this.currentKey = 'C';
@@ -1201,14 +1201,25 @@ const currentPage = Astro.url.pathname;
         
         let newMode = this.currentMusicMode;
         
-        // Mode switching logic
+        // Mode switching logic with hysteresis to prevent rapid changes
+        // Add 0.1 buffer when transitioning OUT of a mode
+        const buffer = 0.1;
+        
         if (motionVal < 0.1 && saturationVal < 0.2) {
           newMode = 'sparse';
-        } else if (motionVal > 0.6) {
+        } else if (motionVal > 0.7) {
+          // Higher threshold to enter rhythmic
           newMode = 'rhythmic';
-        } else if (saturationVal > 0.5 && motionVal > 0.3) {
+        } else if (this.currentMusicMode === 'rhythmic' && motionVal > 0.5) {
+          // Stay in rhythmic with buffer
+          newMode = 'rhythmic';
+        } else if (saturationVal > 0.6 && motionVal > 0.4) {
+          // Higher thresholds for structured
           newMode = 'structured';
-        } else if (motionVal > 0.2 && motionVal < 0.6) {
+        } else if (this.currentMusicMode === 'structured' && saturationVal > 0.4 && motionVal > 0.2) {
+          // Stay in structured with buffer
+          newMode = 'structured';
+        } else if (motionVal > 0.2 && motionVal < 0.7) {
           newMode = 'melodic';
         }
         
