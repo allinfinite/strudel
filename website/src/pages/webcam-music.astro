@@ -64,6 +64,10 @@ const currentPage = Astro.url.pathname;
       <div id="modeDisplay" class="mode-display mode-sparse">SPARSE</div>
       <div class="stats">
         <div class="stat">
+          <div class="stat-label">BPM</div>
+          <div id="bpm" class="stat-value">120</div>
+        </div>
+        <div class="stat">
           <div class="stat-label">Brightness</div>
           <div id="brightness" class="stat-value">0</div>
         </div>
@@ -474,6 +478,7 @@ const currentPage = Astro.url.pathname;
         this.infoPanel = document.getElementById('infoPanel');
         
         this.modeDisplay = document.getElementById('modeDisplay');
+        this.bpmDisplay = document.getElementById('bpm');
         this.brightnessDisplay = document.getElementById('brightness');
         this.motionDisplay = document.getElementById('motion');
         this.saturationDisplay = document.getElementById('saturation');
@@ -769,6 +774,9 @@ const currentPage = Astro.url.pathname;
           }
           
         }, stepDuration);
+        
+        // Update BPM display
+        this.updateUI({ bpm: this.bpm });
         
         console.log('🎼 Master clock started at', this.bpm, 'BPM');
       }
@@ -1175,6 +1183,7 @@ const currentPage = Astro.url.pathname;
         if (values.brightness) this.brightnessDisplay.textContent = values.brightness;
         if (values.motion) this.motionDisplay.textContent = values.motion;
         if (values.saturation) this.saturationDisplay.textContent = values.saturation;
+        if (values.bpm !== undefined) this.bpmDisplay.textContent = values.bpm;
       }
       
       drawWireframeMesh() {
