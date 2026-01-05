@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "astro dev --host 0.0.0.0",
     "start": "astro dev",
+    "muse": "node ../packages/osc/server.js & astro dev --host 0.0.0.0",
     "build": "astro build",
     "preview": "astro preview --port 3009 --host 0.0.0.0",
     "astro": "astro",
