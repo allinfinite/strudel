@@ -1,0 +1,3659 @@
+---
+// Brainwave Therapy Suite for Vibra-Acoustic Table
+// Manual frequency control + Muse brainwave integration + Therapy Modes
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brainwave Therapy Suite | Strudel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-dark: #12121a;
+      --bg-card: #1a1a24;
+      --bg-hover: #242430;
+      --border: #2a2a3a;
+      --text: #e8e8f0;
+      --text-dim: #888898;
+      --accent: #00d4aa;
+      --accent-glow: rgba(0, 212, 170, 0.3);
+      --warning: #ffaa00;
+      --danger: #ff4466;
+      --freq-delta: #ff6b6b;
+      --freq-theta: #ffa502;
+      --freq-alpha: #2ed573;
+      --freq-beta: #1e90ff;
+      --freq-gamma: #a55eea;
+    }
+    
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: 
+        radial-gradient(ellipse at 20% 80%, rgba(0, 212, 170, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(255, 107, 107, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(30, 144, 255, 0.05) 0%, transparent 70%);
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      padding-bottom: 80px;
+    }
+    
+    header {
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--freq-beta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    
+    /* Main controls */
+    .main-controls {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      font-family: 'JetBrains Mono', monospace;
+      padding: 12px 24px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent);
+    }
+    
+    .btn.active {
+      background: var(--accent);
+      color: var(--bg-deep);
+      border-color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    
+    .btn.danger:hover {
+      background: var(--danger);
+      border-color: var(--danger);
+    }
+    
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 0.8rem;
+    }
+    
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .card-title {
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+    
+    /* Therapy Mode Selector */
+    .therapy-modes {
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 30px var(--accent-glow);
+    }
+    
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    @media (max-width: 700px) {
+      .mode-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    
+    @media (max-width: 500px) {
+      .mode-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    .mode-btn {
+      padding: 15px 10px;
+      text-align: center;
+      border-radius: 10px;
+      background: var(--bg-dark);
+      border: 2px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .mode-btn:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    
+    .mode-btn.active {
+      background: linear-gradient(135deg, rgba(0,212,170,0.2), rgba(0,212,170,0.1));
+      border-color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    
+    .mode-btn .icon {
+      font-size: 1.5rem;
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    .mode-btn .name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    /* Therapeutic Presets */
+    .therapy-presets {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    
+    .therapy-preset {
+      padding: 12px 8px;
+      text-align: center;
+      border-radius: 8px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .therapy-preset:hover {
+      border-color: var(--accent);
+    }
+    
+    .therapy-preset.active {
+      background: var(--accent);
+      color: var(--bg-deep);
+      border-color: var(--accent);
+    }
+    
+    .therapy-preset .preset-icon {
+      font-size: 1.2rem;
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    .therapy-preset .preset-name {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    
+    /* Coherence Meter */
+    .coherence-section {
+      margin-top: 15px;
+      padding: 15px;
+      background: var(--bg-dark);
+      border-radius: 10px;
+    }
+    
+    .coherence-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .coherence-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    .coherence-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+    
+    .coherence-bar {
+      height: 12px;
+      background: var(--bg-deep);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .coherence-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.3s ease-out, background 0.3s;
+      background: linear-gradient(90deg, var(--freq-delta), var(--freq-theta), var(--freq-alpha), var(--accent));
+    }
+    
+    .target-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 0.8rem;
+    }
+    
+    .target-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .target-badge.delta { background: var(--freq-delta); color: white; }
+    .target-badge.theta { background: var(--freq-theta); color: black; }
+    .target-badge.alpha { background: var(--freq-alpha); color: black; }
+    .target-badge.beta { background: var(--freq-beta); color: white; }
+    
+    /* Brainwave Bars */
+    .brainwave-bars {
+      display: flex;
+      gap: 12px;
+      height: 140px;
+      align-items: flex-end;
+      padding: 15px;
+      background: var(--bg-dark);
+      border-radius: 8px;
+    }
+    
+    .wave-bar {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .wave-bar-container {
+      width: 100%;
+      height: 80px;
+      background: var(--bg-deep);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .wave-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    
+    .wave-bar-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    
+    .wave-bar-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+    }
+    
+    /* Layer Mixer */
+    .layer-mixer {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .layer-control {
+      text-align: center;
+      padding: 10px;
+      background: var(--bg-dark);
+      border-radius: 8px;
+    }
+    
+    .layer-control .layer-name {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    
+    .layer-control input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--bg-deep);
+      outline: none;
+      transform: rotate(-90deg);
+      width: 50px;
+      margin: 20px 0;
+    }
+    
+    .layer-control input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    
+    .layer-control .freq-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text);
+    }
+    
+    /* Visualizer */
+    .visualizer {
+      background: var(--bg-dark);
+      border-radius: 8px;
+      height: 120px;
+      overflow: hidden;
+    }
+    
+    #waveform {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Master Volume */
+    .master-volume {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .master-volume label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    
+    .master-volume input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--bg-deep);
+    }
+    
+    .master-volume input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    
+    .volume-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      min-width: 60px;
+      text-align: right;
+    }
+    
+    /* Manual Tone Controls */
+    .tone-controls {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .tone-item {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    
+    .tone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .tone-freq {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .tone-freq span {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    
+    .freq-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem;
+      color: var(--accent);
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      width: 100px;
+      outline: none;
+    }
+    
+    .freq-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    
+    .freq-input::-webkit-inner-spin-button,
+    .freq-input::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+    
+    .tone-controls-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .tone-controls-row input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--bg-deep);
+    }
+    
+    .tone-controls-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    
+    .tone-controls-row select {
+      padding: 6px 10px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+    
+    /* Frequency Presets */
+    .freq-presets {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+    }
+    
+    .freq-preset {
+      padding: 10px 5px;
+      text-align: center;
+      border-radius: 6px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .freq-preset:hover {
+      border-color: var(--accent);
+    }
+    
+    .freq-preset .freq {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      color: var(--accent);
+      display: block;
+    }
+    
+    .freq-preset .name {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    
+    /* Status Bar */
+    .status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+    
+    .status-dot.active {
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    
+    /* Binaural Beats */
+    .binaural-card {
+      background: linear-gradient(135deg, var(--bg-card), rgba(30, 144, 255, 0.1));
+      border-color: var(--freq-beta);
+    }
+    
+    .binaural-presets {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .binaural-preset {
+      padding: 12px 8px;
+      text-align: center;
+      border-radius: 8px;
+      background: var(--bg-dark);
+      border: 2px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .binaural-preset:hover {
+      border-color: var(--freq-beta);
+      transform: translateY(-2px);
+    }
+    
+    .binaural-preset.active {
+      background: linear-gradient(135deg, rgba(30, 144, 255, 0.3), rgba(30, 144, 255, 0.1));
+      border-color: var(--freq-beta);
+      box-shadow: 0 0 15px rgba(30, 144, 255, 0.3);
+    }
+    
+    .binaural-preset .preset-hz {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      color: var(--freq-beta);
+      display: block;
+    }
+    
+    .binaural-preset .preset-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: block;
+      margin: 4px 0 2px;
+    }
+    
+    .binaural-preset .preset-desc {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      display: block;
+    }
+    
+    .binaural-display {
+      background: var(--bg-dark);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .freq-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .freq-channel {
+      text-align: center;
+      padding: 10px 15px;
+      background: var(--bg-deep);
+      border-radius: 8px;
+      min-width: 80px;
+    }
+    
+    .freq-channel.left { border-left: 3px solid var(--freq-alpha); }
+    .freq-channel.right { border-right: 3px solid var(--freq-theta); }
+    
+    .channel-label {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      display: block;
+    }
+    
+    .channel-freq {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      color: var(--text);
+      display: block;
+    }
+    
+    .channel-unit {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+    
+    .beat-display {
+      text-align: center;
+    }
+    
+    .beat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      color: var(--freq-beta);
+      display: block;
+      text-shadow: 0 0 20px rgba(30, 144, 255, 0.5);
+    }
+    
+    .beat-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    
+    .carrier-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .carrier-control label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      min-width: 100px;
+    }
+    
+    .carrier-control input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--bg-deep);
+    }
+    
+    .carrier-control input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--freq-beta);
+      cursor: pointer;
+    }
+    
+    .entrainment-section {
+      background: var(--bg-dark);
+      border-radius: 10px;
+      padding: 15px;
+    }
+    
+    .entrainment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .entrainment-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .entrainment-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      color: var(--freq-beta);
+    }
+    
+    .entrainment-bar {
+      height: 20px;
+      background: var(--bg-deep);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .entrainment-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--freq-delta), var(--freq-theta), var(--freq-alpha), var(--freq-beta));
+      border-radius: 10px;
+      transition: width 0.3s ease-out;
+    }
+    
+    .entrainment-target {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: white;
+      border-radius: 2px;
+      left: 50%;
+      opacity: 0.5;
+    }
+    
+    .entrainment-status {
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+    
+    .entrainment-status.achieving {
+      color: var(--accent);
+    }
+    
+    /* Reward Mode */
+    .reward-display {
+      background: var(--bg-deep);
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+    }
+    
+    .reward-meter {
+      height: 60px;
+      background: var(--bg-card);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    
+    .reward-threshold-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--warning);
+      left: 50%;
+      z-index: 2;
+      box-shadow: 0 0 10px var(--warning);
+    }
+    
+    .reward-level-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--freq-delta), var(--freq-theta), var(--freq-alpha), var(--accent));
+      transition: width 0.1s ease-out;
+    }
+    
+    .reward-level-fill.rewarding {
+      background: linear-gradient(90deg, var(--accent), #00ff88);
+      box-shadow: inset 0 0 30px rgba(0, 255, 136, 0.3);
+    }
+    
+    .reward-status {
+      position: absolute;
+      top: 50%;
+      right: 15px;
+      transform: translateY(-50%);
+      font-size: 1.5rem;
+      z-index: 3;
+    }
+    
+    .reward-values {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .reward-values span:first-child {
+      font-size: 1.2rem;
+      color: var(--text);
+    }
+    
+    .reward-vs {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+    
+    .reward-values span:last-child {
+      font-size: 1rem;
+      color: var(--warning);
+    }
+    
+    .reward-voicing-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .voicing-btn {
+      padding: 12px 10px;
+      text-align: center;
+      border-radius: 8px;
+      background: var(--bg-deep);
+      border: 2px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .voicing-btn:hover {
+      border-color: var(--accent);
+    }
+    
+    .voicing-btn.active {
+      background: linear-gradient(135deg, rgba(0, 212, 170, 0.2), rgba(0, 212, 170, 0.05));
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    
+    .voicing-btn .voicing-name {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    
+    .voicing-btn .voicing-desc {
+      display: block;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    
+    /* Mind Monitor Info */
+    .mind-monitor-info {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      padding: 10px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .mind-monitor-info .info-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .mind-monitor-info .info-value {
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+    
+    .mind-monitor-info code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-deep);
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 0.85rem;
+    }
+
+    .bridge-status {
+      margin-left: auto;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+
+    .bridge-status.connected {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .bridge-status.disconnected {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    /* Setup Guide */
+    .setup-guide {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .setup-toggle {
+      width: 100%;
+      padding: 0.85rem 1.25rem;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .setup-toggle:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .toggle-icon {
+      transition: transform 0.3s;
+      font-size: 0.8rem;
+    }
+
+    .setup-guide.expanded .toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .setup-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease-out;
+      background: var(--bg-dark);
+    }
+
+    .setup-guide.expanded .setup-content {
+      max-height: 800px;
+    }
+
+    .setup-steps {
+      padding: 1rem 1.25rem;
+    }
+
+    .setup-step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .setup-step:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      color: white;
+    }
+
+    .step-content h4 {
+      margin: 0 0 0.5rem 0;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .step-content p {
+      margin: 0.3rem 0;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    .step-note {
+      font-size: 0.75rem !important;
+      color: var(--text-dim) !important;
+      font-style: italic;
+      opacity: 0.7;
+    }
+
+    .step-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .code-block {
+      display: block;
+      background: var(--bg-deep);
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #22d3ee;
+      margin: 0.5rem 0;
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      user-select: all;
+      cursor: pointer;
+    }
+
+    .code-block:hover {
+      background: var(--bg-card);
+    }
+
+    .config-values {
+      background: var(--bg-deep);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin: 0.5rem 0;
+    }
+
+    .config-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0.3rem 0;
+    }
+
+    .config-label {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      min-width: 100px;
+    }
+
+    .config-item code {
+      background: rgba(139, 92, 246, 0.2);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 0.85rem;
+    }
+
+    .setup-status {
+      padding: 0.75rem 1.25rem;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+    }
+
+    .status-check {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    .status-check.success {
+      color: #22c55e;
+    }
+
+    .status-check.success .status-icon {
+      color: #22c55e;
+    }
+
+    .status-check.error {
+      color: #ef4444;
+    }
+
+    .status-check.error .status-icon {
+      color: #ef4444;
+    }
+
+    .status-icon {
+      font-size: 1rem;
+    }
+    
+    /* Mode-specific panels */
+    .mode-panel {
+      display: none;
+      margin-top: 15px;
+      padding: 15px;
+      background: var(--bg-dark);
+      border-radius: 10px;
+    }
+    
+    .mode-panel.active {
+      display: block;
+    }
+    
+    .mode-panel h4 {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+    
+    /* Target selector for entrainment */
+    .target-selector {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .target-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 2px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.8rem;
+    }
+    
+    .target-btn:hover { border-color: var(--accent); }
+    .target-btn.active { background: var(--accent); color: var(--bg-deep); border-color: var(--accent); }
+    .target-btn.delta { border-color: var(--freq-delta); }
+    .target-btn.delta.active { background: var(--freq-delta); }
+    .target-btn.theta { border-color: var(--freq-theta); }
+    .target-btn.theta.active { background: var(--freq-theta); color: black; }
+    .target-btn.alpha { border-color: var(--freq-alpha); }
+    .target-btn.alpha.active { background: var(--freq-alpha); color: black; }
+    .target-btn.beta { border-color: var(--freq-beta); }
+    .target-btn.beta.active { background: var(--freq-beta); }
+    
+    .target-selector-global {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .target-selector-global .target-btn {
+      flex: 1;
+      min-width: 70px;
+      padding: 8px 12px;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animation"></div>
+  
+  <div class="container">
+    <header>
+      <h1>BRAINWAVE THERAPY SUITE</h1>
+      <p class="subtitle">Vibra-Acoustic Neural Entrainment</p>
+    </header>
+    
+    <div class="main-controls">
+      <button id="startBtn" class="btn">
+        <span>▶</span> START
+      </button>
+      <button id="stopBtn" class="btn danger">
+        <span>◼</span> STOP
+      </button>
+      <button id="museBtn" class="btn">
+        <span>🧠</span> CONNECT MUSE
+      </button>
+      <button id="addToneBtn" class="btn">
+        <span>+</span> ADD TONE
+      </button>
+    </div>
+    
+    <!-- Setup Guide -->
+    <div class="setup-guide" id="setupGuide">
+      <button class="setup-toggle" id="setupToggle">
+        <span>📋 Setup Guide</span>
+        <span class="toggle-icon">▼</span>
+      </button>
+      <div class="setup-content" id="setupContent">
+        <div class="setup-steps">
+          <div class="setup-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Install the OSC Bridge</h4>
+              <p>Open Terminal and run:</p>
+              <code class="code-block">npm install -g @strudel/osc</code>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Start the Bridge</h4>
+              <p>Run this command (keep it running):</p>
+              <code class="code-block">npx @strudel/osc</code>
+              <p class="step-note">This creates a bridge between Mind Monitor and your browser</p>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Configure Mind Monitor</h4>
+              <p>In the Mind Monitor app, go to Settings → OSC and set:</p>
+              <div class="config-values">
+                <div class="config-item">
+                  <span class="config-label">IP Address:</span>
+                  <code id="localIP2">your computer's IP</code>
+                </div>
+                <div class="config-item">
+                  <span class="config-label">Port:</span>
+                  <code>57121</code>
+                </div>
+              </div>
+              <p class="step-note">Find your IP: run <code>ipconfig getifaddr en0</code> (Mac) or <code>ipconfig</code> (Windows)</p>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Connect</h4>
+              <p>Put on your Muse headband, start streaming in Mind Monitor, then click <strong>CONNECT MUSE</strong> above!</p>
+            </div>
+          </div>
+        </div>
+        <div class="setup-status">
+          <div class="status-check" id="bridgeStatus">
+            <span class="status-icon">⏳</span>
+            <span>Checking for OSC bridge...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick Connection Info (when bridge is running) -->
+    <div class="mind-monitor-info" id="connectionInfo" style="display: none;">
+      <span class="info-label">Mind Monitor Settings:</span>
+      <span class="info-value">IP: <code id="localIP">detecting...</code></span>
+      <span class="info-value">Port: <code>57121</code></span>
+      <span class="bridge-status connected">✓ Bridge Connected</span>
+    </div>
+    
+    <!-- Therapy Mode Selection -->
+    <div class="card therapy-modes">
+      <div class="card-header">
+        <span class="card-title">🎯 THERAPY MODE</span>
+        <span id="modeStatus" style="color: var(--text-dim); font-size: 0.8rem;">Select a mode</span>
+      </div>
+      
+      <div class="mode-grid">
+        <button class="mode-btn" data-mode="entrainment">
+          <span class="icon">🎯</span>
+          <span class="name">Entrainment</span>
+        </button>
+        <button class="mode-btn" data-mode="layered">
+          <span class="icon">🌊</span>
+          <span class="name">Layered</span>
+        </button>
+        <button class="mode-btn" data-mode="morphing">
+          <span class="icon">✨</span>
+          <span class="name">Morphing</span>
+        </button>
+        <button class="mode-btn" data-mode="rhythmic">
+          <span class="icon">💓</span>
+          <span class="name">Rhythmic</span>
+        </button>
+        <button class="mode-btn" data-mode="reward">
+          <span class="icon">🏆</span>
+          <span class="name">Reward</span>
+        </button>
+      </div>
+      
+      <div class="therapy-presets">
+        <button class="therapy-preset" data-preset="relaxation">
+          <span class="preset-icon">🧘</span>
+          <span class="preset-name">Relaxation</span>
+        </button>
+        <button class="therapy-preset" data-preset="sleep">
+          <span class="preset-icon">😴</span>
+          <span class="preset-name">Sleep</span>
+        </button>
+        <button class="therapy-preset" data-preset="meditation">
+          <span class="preset-icon">🕉️</span>
+          <span class="preset-name">Meditation</span>
+        </button>
+        <button class="therapy-preset" data-preset="pain">
+          <span class="preset-icon">💚</span>
+          <span class="preset-name">Pain Relief</span>
+        </button>
+      </div>
+      
+      <!-- Coherence Meter -->
+      <div class="coherence-section">
+        <div class="coherence-header">
+          <span class="coherence-label">Brain-Sound Coherence</span>
+          <span id="coherenceValue" class="coherence-value">0%</span>
+        </div>
+        <div class="coherence-bar">
+          <div id="coherenceFill" class="coherence-fill" style="width: 0%;"></div>
+        </div>
+        <div class="target-indicator">
+          <span style="color: var(--text-dim);">Target:</span>
+          <span id="targetBadge" class="target-badge alpha">Alpha</span>
+          <span id="targetDesc" style="color: var(--text-dim);">Relaxed focus state</span>
+        </div>
+        
+        <!-- Target State Selector - Always visible -->
+        <div class="target-selector-global">
+          <button class="target-btn delta" data-target="delta">δ Delta</button>
+          <button class="target-btn theta" data-target="theta">θ Theta</button>
+          <button class="target-btn alpha active" data-target="alpha">α Alpha</button>
+          <button class="target-btn beta" data-target="beta">β Beta</button>
+        </div>
+      </div>
+      
+      <!-- Mode-specific panels -->
+      <div id="entrainmentPanel" class="mode-panel">
+        <h4>Entrainment Settings</h4>
+        <p style="font-size: 0.75rem; color: var(--text-dim); margin: 0;">Binaural beats guide your brainwaves toward the target state selected above.</p>
+      </div>
+      
+      <div id="layeredPanel" class="mode-panel">
+        <h4>Layer Volumes</h4>
+        <div class="layer-mixer">
+          <div class="layer-control">
+            <div class="layer-name">Delta</div>
+            <input type="range" id="layerDelta" min="0" max="100" value="80">
+            <div class="freq-label">40Hz</div>
+          </div>
+          <div class="layer-control">
+            <div class="layer-name">Theta</div>
+            <input type="range" id="layerTheta" min="0" max="100" value="70">
+            <div class="freq-label">100Hz</div>
+          </div>
+          <div class="layer-control">
+            <div class="layer-name">Alpha</div>
+            <input type="range" id="layerAlpha" min="0" max="100" value="60">
+            <div class="freq-label">200Hz</div>
+          </div>
+          <div class="layer-control">
+            <div class="layer-name">Beta</div>
+            <input type="range" id="layerBeta" min="0" max="100" value="40">
+            <div class="freq-label">400Hz</div>
+          </div>
+          <div class="layer-control">
+            <div class="layer-name">Gamma</div>
+            <input type="range" id="layerGamma" min="0" max="100" value="30">
+            <div class="freq-label">800Hz</div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="morphingPanel" class="mode-panel">
+        <h4>Morphing Settings</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div>
+            <label style="font-size: 0.7rem; color: var(--text-dim);">Base Frequency</label>
+            <input type="range" id="morphBaseFreq" min="20" max="200" value="60" style="width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 0.7rem; color: var(--text-dim);">Morph Intensity</label>
+            <input type="range" id="morphIntensity" min="0" max="100" value="70" style="width: 100%;">
+          </div>
+        </div>
+      </div>
+      
+      <div id="rhythmicPanel" class="mode-panel">
+        <h4>Rhythm Settings</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div>
+            <label style="font-size: 0.7rem; color: var(--text-dim);">Base Tempo</label>
+            <input type="range" id="rhythmTempo" min="20" max="120" value="60" style="width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 0.7rem; color: var(--text-dim);">Pulse Depth</label>
+            <input type="range" id="rhythmDepth" min="0" max="100" value="80" style="width: 100%;">
+          </div>
+        </div>
+      </div>
+      
+      <div id="rewardPanel" class="mode-panel">
+        <h4>Reward Settings</h4>
+        <div class="reward-voicing-selector">
+          <button class="voicing-btn active" data-voicing="minor">
+            <span class="voicing-name">Minor 9/11/13</span>
+            <span class="voicing-desc">Mystical</span>
+          </button>
+          <button class="voicing-btn" data-voicing="lydian">
+            <span class="voicing-name">Lydian Dominant</span>
+            <span class="voicing-desc">Transcendent</span>
+          </button>
+        </div>
+        <div class="reward-display">
+          <div class="reward-meter">
+            <div class="reward-threshold-line" id="rewardThresholdLine"></div>
+            <div class="reward-level-fill" id="rewardLevelFill"></div>
+            <div class="reward-status" id="rewardStatus">🔇</div>
+          </div>
+          <div class="reward-values">
+            <span id="rewardCurrentValue">0%</span>
+            <span class="reward-vs">vs</span>
+            <span id="rewardThresholdValue">50%</span>
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
+          <label style="font-size: 0.7rem; color: var(--text-dim);">Entrainment Threshold: <span id="thresholdDisplay">50</span>%</label>
+          <input type="range" id="rewardThreshold" min="20" max="90" value="50" style="width: 100%;">
+        </div>
+        <div style="margin-top: 10px;">
+          <label style="font-size: 0.7rem; color: var(--text-dim);">Root Frequency: <span id="rewardFreqDisplay">45</span> Hz</label>
+          <input type="range" id="rewardFreq" min="30" max="80" value="45" style="width: 100%;">
+        </div>
+      </div>
+    </div>
+    
+    <div class="grid">
+      <!-- Left Column -->
+      <div>
+        <!-- Brainwave Display -->
+        <div id="museSection" class="card" style="display: none;">
+          <div class="card-header">
+            <span class="card-title">🧠 BRAINWAVES</span>
+            <button id="museDisconnect" class="btn btn-small">Disconnect</button>
+          </div>
+          <div class="brainwave-bars">
+            <div class="wave-bar delta">
+              <div class="wave-bar-container">
+                <canvas class="wave-canvas" id="deltaCanvas"></canvas>
+              </div>
+              <span class="wave-bar-value" id="deltaVal">0.00</span>
+              <span class="wave-bar-label">Delta</span>
+            </div>
+            <div class="wave-bar theta">
+              <div class="wave-bar-container">
+                <canvas class="wave-canvas" id="thetaCanvas"></canvas>
+              </div>
+              <span class="wave-bar-value" id="thetaVal">0.00</span>
+              <span class="wave-bar-label">Theta</span>
+            </div>
+            <div class="wave-bar alpha">
+              <div class="wave-bar-container">
+                <canvas class="wave-canvas" id="alphaCanvas"></canvas>
+              </div>
+              <span class="wave-bar-value" id="alphaVal">0.00</span>
+              <span class="wave-bar-label">Alpha</span>
+            </div>
+            <div class="wave-bar beta">
+              <div class="wave-bar-container">
+                <canvas class="wave-canvas" id="betaCanvas"></canvas>
+              </div>
+              <span class="wave-bar-value" id="betaVal">0.00</span>
+              <span class="wave-bar-label">Beta</span>
+            </div>
+            <div class="wave-bar gamma">
+              <div class="wave-bar-container">
+                <canvas class="wave-canvas" id="gammaCanvas"></canvas>
+              </div>
+              <span class="wave-bar-value" id="gammaVal">0.00</span>
+              <span class="wave-bar-label">Gamma</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Manual Tones -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🎛️ MANUAL TONES</span>
+            <span id="toneCount" style="color: var(--text-dim); font-size: 0.8rem;">0 tones</span>
+          </div>
+          <div id="toneList" class="tone-controls">
+            <div style="text-align: center; padding: 30px; color: var(--text-dim);">
+              Click "+ ADD TONE" to create a manual oscillator
+            </div>
+          </div>
+        </div>
+        
+        <!-- Frequency Presets -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚡ FREQUENCY PRESETS</span>
+          </div>
+          <div class="freq-presets">
+            <button class="freq-preset" data-freq="40"><span class="freq">40</span><span class="name">Gamma</span></button>
+            <button class="freq-preset" data-freq="20"><span class="freq">20</span><span class="name">Beta</span></button>
+            <button class="freq-preset" data-freq="10"><span class="freq">10</span><span class="name">Alpha</span></button>
+            <button class="freq-preset" data-freq="7.83"><span class="freq">7.83</span><span class="name">Schumann</span></button>
+            <button class="freq-preset" data-freq="6"><span class="freq">6</span><span class="name">Theta</span></button>
+            <button class="freq-preset" data-freq="2"><span class="freq">2</span><span class="name">Delta</span></button>
+            <button class="freq-preset" data-freq="111"><span class="freq">111</span><span class="name">Regen</span></button>
+            <button class="freq-preset" data-freq="174"><span class="freq">174</span><span class="name">Pain</span></button>
+            <button class="freq-preset" data-freq="528"><span class="freq">528</span><span class="name">DNA</span></button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Column -->
+      <div>
+        <!-- Binaural Beats -->
+        <div class="card binaural-card">
+          <div class="card-header">
+            <span class="card-title">🎧 BINAURAL BEATS</span>
+            <button id="binauralToggle" class="btn btn-small">OFF</button>
+          </div>
+          
+          <div class="binaural-presets">
+            <button class="binaural-preset" data-beat="2" data-target="delta">
+              <span class="preset-hz">2 Hz</span>
+              <span class="preset-label">Delta</span>
+              <span class="preset-desc">Deep Sleep</span>
+            </button>
+            <button class="binaural-preset" data-beat="6" data-target="theta">
+              <span class="preset-hz">6 Hz</span>
+              <span class="preset-label">Theta</span>
+              <span class="preset-desc">Meditation</span>
+            </button>
+            <button class="binaural-preset active" data-beat="10" data-target="alpha">
+              <span class="preset-hz">10 Hz</span>
+              <span class="preset-label">Alpha</span>
+              <span class="preset-desc">Relaxation</span>
+            </button>
+            <button class="binaural-preset" data-beat="20" data-target="beta">
+              <span class="preset-hz">20 Hz</span>
+              <span class="preset-label">Beta</span>
+              <span class="preset-desc">Focus</span>
+            </button>
+          </div>
+          
+          <div class="binaural-display">
+            <div class="freq-display">
+              <div class="freq-channel left">
+                <span class="channel-label">L</span>
+                <span class="channel-freq" id="leftFreq">195</span>
+                <span class="channel-unit">Hz</span>
+              </div>
+              <div class="beat-display">
+                <span class="beat-value" id="beatFreq">10</span>
+                <span class="beat-label">Hz Beat</span>
+              </div>
+              <div class="freq-channel right">
+                <span class="channel-label">R</span>
+                <span class="channel-freq" id="rightFreq">205</span>
+                <span class="channel-unit">Hz</span>
+              </div>
+            </div>
+            <div class="carrier-control">
+              <label>Carrier: <span id="carrierValue">200</span> Hz</label>
+              <input type="range" id="carrierSlider" min="100" max="400" value="200">
+            </div>
+          </div>
+          
+          <div class="entrainment-section">
+            <div class="entrainment-header">
+              <span class="entrainment-label">Entrainment Progress</span>
+              <span id="entrainmentPercent" class="entrainment-value">0%</span>
+            </div>
+            <div class="entrainment-bar">
+              <div id="entrainmentFill" class="entrainment-fill"></div>
+              <div id="entrainmentTarget" class="entrainment-target"></div>
+            </div>
+            <div class="entrainment-status" id="entrainmentStatus">Connect Muse for entrainment feedback</div>
+          </div>
+        </div>
+        
+        <!-- Master Output -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🔊 MASTER OUTPUT</span>
+          </div>
+          <div class="master-volume">
+            <label>VOLUME</label>
+            <input type="range" id="masterVolume" min="0" max="100" value="70">
+            <span id="masterValue" class="volume-value">70%</span>
+          </div>
+          <div class="visualizer">
+            <canvas id="waveform"></canvas>
+          </div>
+        </div>
+        
+        <!-- Active Layers Display -->
+        <div id="layersDisplay" class="card" style="display: none;">
+          <div class="card-header">
+            <span class="card-title">🌊 ACTIVE LAYERS</span>
+          </div>
+          <div id="layerBars" style="display: flex; gap: 10px; height: 80px; align-items: flex-end;">
+            <div style="flex: 1; text-align: center;">
+              <div id="layerBarDelta" style="height: 0%; background: var(--freq-delta); border-radius: 4px 4px 0 0; transition: height 0.1s;"></div>
+              <span style="font-size: 0.7rem; color: var(--text-dim);">δ</span>
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <div id="layerBarTheta" style="height: 0%; background: var(--freq-theta); border-radius: 4px 4px 0 0; transition: height 0.1s;"></div>
+              <span style="font-size: 0.7rem; color: var(--text-dim);">θ</span>
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <div id="layerBarAlpha" style="height: 0%; background: var(--freq-alpha); border-radius: 4px 4px 0 0; transition: height 0.1s;"></div>
+              <span style="font-size: 0.7rem; color: var(--text-dim);">α</span>
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <div id="layerBarBeta" style="height: 0%; background: var(--freq-beta); border-radius: 4px 4px 0 0; transition: height 0.1s;"></div>
+              <span style="font-size: 0.7rem; color: var(--text-dim);">β</span>
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <div id="layerBarGamma" style="height: 0%; background: var(--freq-gamma); border-radius: 4px 4px 0 0; transition: height 0.1s;"></div>
+              <span style="font-size: 0.7rem; color: var(--text-dim);">γ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="status-bar">
+    <div class="status-item">
+      <div id="audioStatus" class="status-dot"></div>
+      <span id="audioStatusText">Audio: Stopped</span>
+    </div>
+    <div class="status-item">
+      <span id="modeStatusBar">Mode: None</span>
+    </div>
+    <div class="status-item">
+      <div id="museStatusDot" class="status-dot"></div>
+      <span id="museStatusBar">Muse: Disconnected</span>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // MUSE OSC HANDLER
+    // ============================================
+    
+    class MuseOSCHandler {
+      constructor() {
+        this.ws = null;
+        this.connected = false;
+        this.lastDataTime = 0;
+        // Normalized values (0-1) for visualization
+        this.delta = 0; this.theta = 0; this.alpha = 0; this.beta = 0; this.gamma = 0;
+        // dB values for display (converted from log power)
+        this.deltaDb = 0; this.thetaDb = 0; this.alphaDb = 0; this.betaDb = 0; this.gammaDb = 0;
+        this.smoothing = 0.3;
+        this.decayRate = 0.95;
+        this.onData = null;
+        this.onConnect = null;
+        this.onDisconnect = null;
+        this.decayInterval = null;
+        // dB reference offset (Mind Monitor typically shows values around 70-100 dB)
+        this.dbOffset = 90;
+        // Auto-scaling for visualization
+        this.ranges = {
+          delta: { min: Infinity, max: -Infinity },
+          theta: { min: Infinity, max: -Infinity },
+          alpha: { min: Infinity, max: -Infinity },
+          beta: { min: Infinity, max: -Infinity },
+          gamma: { min: Infinity, max: -Infinity }
+        };
+      }
+      
+      connect(url = 'ws://localhost:8080') {
+        if (this.ws) return;
+        this.ws = new WebSocket(url);
+        this.ws.binaryType = 'arraybuffer';
+        
+        this.ws.onopen = () => {
+          this.connected = true;
+          this.startDecayCheck();
+          this.onConnect?.();
+        };
+        
+        this.ws.onclose = () => {
+          this.connected = false;
+          this.ws = null;
+          this.stopDecayCheck();
+          this.resetValues();
+          this.onDisconnect?.();
+        };
+        
+        this.ws.onerror = (err) => console.error('[Muse] Error:', err);
+        this.ws.onmessage = (e) => this.parseOSC(e.data);
+      }
+      
+      disconnect() {
+        if (this.ws) this.ws.close();
+        this.ws = null;
+        this.connected = false;
+        this.stopDecayCheck();
+        this.resetValues();
+      }
+      
+      resetValues() {
+        this.delta = 0; this.theta = 0; this.alpha = 0; this.beta = 0; this.gamma = 0;
+        this.deltaDb = 0; this.thetaDb = 0; this.alphaDb = 0; this.betaDb = 0; this.gammaDb = 0;
+        this.ranges = {
+          delta: { min: Infinity, max: -Infinity },
+          theta: { min: Infinity, max: -Infinity },
+          alpha: { min: Infinity, max: -Infinity },
+          beta: { min: Infinity, max: -Infinity },
+          gamma: { min: Infinity, max: -Infinity }
+        };
+        this.onData?.({
+          delta: 0, theta: 0, alpha: 0, beta: 0, gamma: 0,
+          deltaDb: 0, thetaDb: 0, alphaDb: 0, betaDb: 0, gammaDb: 0
+        });
+      }
+      
+      startDecayCheck() {
+        this.stopDecayCheck();
+        this.decayInterval = setInterval(() => {
+          // If no data received in 500ms, decay values toward 0
+          if (Date.now() - this.lastDataTime > 500) {
+            this.delta *= this.decayRate;
+            this.theta *= this.decayRate;
+            this.alpha *= this.decayRate;
+            this.beta *= this.decayRate;
+            this.gamma *= this.decayRate;
+            
+            // Snap to 0 if very small
+            if (this.delta < 0.01) this.delta = 0;
+            if (this.theta < 0.01) this.theta = 0;
+            if (this.alpha < 0.01) this.alpha = 0;
+            if (this.beta < 0.01) this.beta = 0;
+            if (this.gamma < 0.01) this.gamma = 0;
+            
+            this.onData?.({ delta: this.delta, theta: this.theta, alpha: this.alpha, beta: this.beta, gamma: this.gamma });
+          }
+        }, 100);
+      }
+      
+      stopDecayCheck() {
+        if (this.decayInterval) {
+          clearInterval(this.decayInterval);
+          this.decayInterval = null;
+        }
+      }
+      
+      parseOSC(data) {
+        try {
+          const view = new DataView(data);
+          let offset = 0;
+          let address = '';
+          while (offset < data.byteLength) {
+            const char = view.getUint8(offset++);
+            if (char === 0) break;
+            address += String.fromCharCode(char);
+          }
+          offset = Math.ceil(offset / 4) * 4;
+          
+          let typetag = '';
+          if (offset < data.byteLength && view.getUint8(offset) === 44) {
+            offset++;
+            while (offset < data.byteLength) {
+              const char = view.getUint8(offset++);
+              if (char === 0) break;
+              typetag += String.fromCharCode(char);
+            }
+            offset = Math.ceil(offset / 4) * 4;
+          }
+          
+          const args = [];
+          for (const type of typetag) {
+            if (type === 'f') { args.push(view.getFloat32(offset, false)); offset += 4; }
+            else if (type === 'i') { args.push(view.getInt32(offset, false)); offset += 4; }
+          }
+          
+          this.handleMessage(address, args);
+        } catch (err) {}
+      }
+      
+      handleMessage(address, args) {
+        this.lastDataTime = Date.now();
+        
+        // Filter out NaN and undefined values
+        const validArgs = args.filter(v => typeof v === 'number' && !isNaN(v));
+        if (validArgs.length === 0) return;
+        
+        const avg = validArgs.reduce((a, b) => a + b, 0) / validArgs.length;
+        const s = this.smoothing;
+        
+        // Determine which band this is
+        let band = null;
+        if (address.includes('delta')) band = 'delta';
+        else if (address.includes('theta')) band = 'theta';
+        else if (address.includes('alpha')) band = 'alpha';
+        else if (address.includes('beta')) band = 'beta';
+        else if (address.includes('gamma')) band = 'gamma';
+        
+        if (!band) return;
+        
+        // Convert log power to dB: multiply by 10 and add offset
+        // Raw values are in Bels (log10 of power), dB = 10 * Bels
+        const dbValue = (avg * 10) + this.dbOffset;
+        const dbKey = band + 'Db';
+        this[dbKey] = this[dbKey] * s + dbValue * (1 - s);
+        
+        // Auto-scale for visualization
+        const range = this.ranges[band];
+        if (avg < range.min) range.min = avg;
+        if (avg > range.max) range.max = avg;
+        range.min = range.min * 0.9999 + avg * 0.0001;
+        range.max = range.max * 0.9999 + avg * 0.0001;
+        
+        // Normalize to 0-1 based on observed range
+        const rangeSize = Math.max(0.1, range.max - range.min);
+        let normalized = (avg - range.min) / rangeSize;
+        normalized = Math.max(0, Math.min(1, normalized));
+        
+        this[band] = this[band] * s + normalized * (1 - s);
+        
+        this.onData?.({
+          delta: this.delta, theta: this.theta, alpha: this.alpha, beta: this.beta, gamma: this.gamma,
+          deltaDb: this.deltaDb, thetaDb: this.thetaDb, alphaDb: this.alphaDb, betaDb: this.betaDb, gammaDb: this.gammaDb
+        });
+      }
+      
+      isReceivingData() { return Date.now() - this.lastDataTime < 1000; }
+    }
+    
+    // ============================================
+    // BRAINWAVE THERAPY ENGINE
+    // ============================================
+    
+    class TherapyEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.compressor = null;
+        this.analyser = null;
+        this.isRunning = false;
+        
+        // Manual tones
+        this.manualOscs = new Map();
+        this.oscIdCounter = 0;
+        
+        // Therapy mode
+        this.currentMode = null;
+        this.targetState = 'alpha';
+        
+        // Layer oscillators (for layered mode)
+        this.layers = {};
+        this.layerGains = { delta: 0.8, theta: 0.7, alpha: 0.6, beta: 0.4, gamma: 0.3 };
+        this.layerFreqs = { delta: 40, theta: 100, alpha: 200, beta: 400, gamma: 800 };
+        
+        // Morphing mode
+        this.morphOsc = null;
+        this.morphFilter = null;
+        this.morphLFO = null;
+        this.morphBaseFreq = 60;
+        this.morphIntensity = 0.7;
+        
+        // Rhythmic mode
+        this.rhythmOscs = [];
+        this.rhythmLFOs = [];
+        this.rhythmTempo = 60;
+        this.rhythmDepth = 0.8;
+        
+        // Entrainment
+        this.binauralOsc = null;
+        this.entrainmentGain = null;
+        
+        // Reward mode
+        this.rewardOscs = [];
+        this.rewardGains = [];
+        this.rewardThreshold = 0.5;
+        this.rewardFreq = 45;
+        this.rewardVoicing = 'minor';
+        this.voiceVolumes = [0.4, 0.25, 0.2, 0.15, 0.12, 0.1, 0.08];
+        this.minorRatios = [1, 1.2, 1.5, 1.8, 2.25, 2.67, 3.4];
+        this.lydianRatios = [1, 2, 3, 4, 5, 6, 7];
+      }
+      
+      async init() {
+        if (this.ctx) return;
+        
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = 0.7;
+        
+        this.compressor = this.ctx.createDynamicsCompressor();
+        this.compressor.threshold.value = -6;
+        this.compressor.knee.value = 6;
+        this.compressor.ratio.value = 4;
+        
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 2048;
+        
+        this.masterGain.connect(this.compressor);
+        this.compressor.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+        
+        this.isRunning = true;
+        this.startVisualization();
+      }
+      
+      setMasterVolume(v) {
+        if (this.masterGain) this.masterGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
+      }
+      
+      // ========== MANUAL TONES ==========
+      
+      addManualTone(freq = 40, waveform = 'sine', volume = 0.5) {
+        if (!this.ctx) return null;
+        const id = ++this.oscIdCounter;
+        
+        const osc = this.ctx.createOscillator();
+        osc.type = waveform;
+        osc.frequency.value = freq;
+        
+        const gain = this.ctx.createGain();
+        gain.gain.value = 0;
+        
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        
+        gain.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.1);
+        
+        this.manualOscs.set(id, { osc, gain, freq, waveform, volume });
+        return id;
+      }
+      
+      updateManualTone(id, params) {
+        const t = this.manualOscs.get(id);
+        if (!t) return;
+        
+        if (params.freq !== undefined) {
+          t.osc.frequency.setTargetAtTime(params.freq, this.ctx.currentTime, 0.05);
+          t.freq = params.freq;
+        }
+        if (params.waveform !== undefined) { t.osc.type = params.waveform; t.waveform = params.waveform; }
+        if (params.volume !== undefined) {
+          t.gain.gain.setTargetAtTime(params.volume, this.ctx.currentTime, 0.05);
+          t.volume = params.volume;
+        }
+      }
+      
+      removeManualTone(id) {
+        const t = this.manualOscs.get(id);
+        if (!t) return;
+        t.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+        setTimeout(() => { t.osc.stop(); t.osc.disconnect(); t.gain.disconnect(); this.manualOscs.delete(id); }, 200);
+      }
+      
+      // ========== THERAPY MODES ==========
+      
+      setMode(mode) {
+        // Stop previous mode
+        this.stopCurrentMode();
+        this.currentMode = mode;
+        
+        if (!this.ctx || !mode) return;
+        
+        switch (mode) {
+          case 'entrainment': this.startEntrainment(); break;
+          case 'layered': this.startLayered(); break;
+          case 'morphing': this.startMorphing(); break;
+          case 'rhythmic': this.startRhythmic(); break;
+          case 'reward': this.startReward(); break;
+        }
+      }
+      
+      stopCurrentMode() {
+        this.stopEntrainment();
+        this.stopLayered();
+        this.stopMorphing();
+        this.stopRhythmic();
+        this.stopReward();
+      }
+      
+      // ========== ENTRAINMENT MODE ==========
+      
+      startEntrainment() {
+        const targetFreqs = { delta: 2, theta: 6, alpha: 10, beta: 20 };
+        const beatFreq = targetFreqs[this.targetState] || 10;
+        const baseFreq = 200;
+        
+        const merger = this.ctx.createChannelMerger(2);
+        
+        const leftOsc = this.ctx.createOscillator();
+        leftOsc.type = 'sine';
+        leftOsc.frequency.value = baseFreq - beatFreq / 2;
+        
+        const rightOsc = this.ctx.createOscillator();
+        rightOsc.type = 'sine';
+        rightOsc.frequency.value = baseFreq + beatFreq / 2;
+        
+        this.entrainmentGain = this.ctx.createGain();
+        this.entrainmentGain.gain.value = 0.3;
+        
+        const leftGain = this.ctx.createGain();
+        const rightGain = this.ctx.createGain();
+        leftGain.gain.value = 1;
+        rightGain.gain.value = 1;
+        
+        leftOsc.connect(leftGain);
+        rightOsc.connect(rightGain);
+        leftGain.connect(merger, 0, 0);
+        rightGain.connect(merger, 0, 1);
+        merger.connect(this.entrainmentGain);
+        this.entrainmentGain.connect(this.masterGain);
+        
+        leftOsc.start();
+        rightOsc.start();
+        
+        // Add sub-bass layer
+        const subOsc = this.ctx.createOscillator();
+        subOsc.type = 'sine';
+        subOsc.frequency.value = 40;
+        const subGain = this.ctx.createGain();
+        subGain.gain.value = 0.4;
+        subOsc.connect(subGain);
+        subGain.connect(this.masterGain);
+        subOsc.start();
+        
+        this.binauralOsc = { leftOsc, rightOsc, leftGain, rightGain, merger, subOsc, subGain, baseFreq, beatFreq };
+      }
+      
+      updateEntrainment(brainwaves) {
+        if (!this.binauralOsc) return;
+        
+        // Calculate coherence with target
+        const targetValue = brainwaves[this.targetState] || 0;
+        const coherence = targetValue;
+        
+        // MORE DRAMATIC: Volume swings from quiet to loud based on coherence
+        if (this.entrainmentGain) {
+          const vol = 0.1 + coherence * 0.8; // 0.1-0.9 range (much wider)
+          this.entrainmentGain.gain.setTargetAtTime(vol, this.ctx.currentTime, 0.05); // Faster response
+        }
+        
+        // Sub-bass reacts dramatically to relaxation
+        if (this.binauralOsc.subGain) {
+          const relaxation = (brainwaves.alpha + brainwaves.theta) / 2;
+          const subVol = 0.1 + relaxation * 0.7; // More range
+          this.binauralOsc.subGain.gain.setTargetAtTime(subVol, this.ctx.currentTime, 0.05);
+          
+          // Also modulate sub frequency based on delta
+          const deltaShift = brainwaves.delta * 20; // 0-20 Hz shift
+          this.binauralOsc.subOsc.frequency.setTargetAtTime(30 + deltaShift, this.ctx.currentTime, 0.1);
+        }
+        
+        // Modulate binaural beat intensity based on gamma (focus)
+        if (this.binauralOsc.leftGain && this.binauralOsc.rightGain) {
+          const intensity = 0.5 + brainwaves.gamma * 0.5;
+          this.binauralOsc.leftGain.gain.setTargetAtTime(intensity, this.ctx.currentTime, 0.05);
+          this.binauralOsc.rightGain.gain.setTargetAtTime(intensity, this.ctx.currentTime, 0.05);
+        }
+        
+        return coherence;
+      }
+      
+      setTargetState(target) {
+        this.targetState = target;
+        if (this.currentMode === 'entrainment' && this.binauralOsc) {
+          const targetFreqs = { delta: 2, theta: 6, alpha: 10, beta: 20 };
+          const beatFreq = targetFreqs[target] || 10;
+          const baseFreq = this.binauralOsc.baseFreq;
+          
+          this.binauralOsc.leftOsc.frequency.setTargetAtTime(baseFreq - beatFreq / 2, this.ctx.currentTime, 0.5);
+          this.binauralOsc.rightOsc.frequency.setTargetAtTime(baseFreq + beatFreq / 2, this.ctx.currentTime, 0.5);
+          this.binauralOsc.beatFreq = beatFreq;
+        }
+      }
+      
+      stopEntrainment() {
+        if (!this.binauralOsc) return;
+        const b = this.binauralOsc;
+        [b.leftOsc, b.rightOsc, b.subOsc].forEach(o => { try { o.stop(); o.disconnect(); } catch(e){} });
+        [b.leftGain, b.rightGain, b.subGain, b.merger].forEach(n => { try { n.disconnect(); } catch(e){} });
+        if (this.entrainmentGain) this.entrainmentGain.disconnect();
+        this.binauralOsc = null;
+        this.entrainmentGain = null;
+      }
+      
+      // ========== LAYERED MODE ==========
+      
+      startLayered() {
+        const waves = ['delta', 'theta', 'alpha', 'beta', 'gamma'];
+        
+        waves.forEach(wave => {
+          const osc = this.ctx.createOscillator();
+          osc.type = wave === 'gamma' ? 'triangle' : 'sine';
+          osc.frequency.value = this.layerFreqs[wave];
+          
+          const gain = this.ctx.createGain();
+          gain.gain.value = 0;
+          
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start();
+          
+          this.layers[wave] = { osc, gain };
+        });
+      }
+      
+      updateLayered(brainwaves) {
+        if (!this.layers.delta) return;
+        
+        const waves = ['delta', 'theta', 'alpha', 'beta', 'gamma'];
+        const baseFreqs = { delta: 40, theta: 100, alpha: 200, beta: 400, gamma: 800 };
+        
+        waves.forEach(wave => {
+          const layer = this.layers[wave];
+          if (layer) {
+            const brainVal = brainwaves[wave] || 0;
+            const mixVal = this.layerGains[wave] || 0.5;
+            
+            // MORE DRAMATIC: Full volume range with faster response
+            const vol = Math.pow(brainVal, 0.7) * mixVal * 0.8; // Power curve for sensitivity
+            layer.gain.gain.setTargetAtTime(vol, this.ctx.currentTime, 0.03); // Faster!
+            
+            // Frequency shifts based on brainwave intensity
+            const baseFreq = baseFreqs[wave];
+            const freqShift = (brainVal - 0.5) * baseFreq * 0.2; // ±10% frequency shift
+            layer.osc.frequency.setTargetAtTime(baseFreq + freqShift, this.ctx.currentTime, 0.05);
+          }
+        });
+      }
+      
+      setLayerGain(wave, value) {
+        this.layerGains[wave] = value;
+      }
+      
+      stopLayered() {
+        Object.values(this.layers).forEach(l => {
+          try { l.osc.stop(); l.osc.disconnect(); l.gain.disconnect(); } catch(e){}
+        });
+        this.layers = {};
+      }
+      
+      // ========== MORPHING MODE ==========
+      
+      startMorphing() {
+        // Main oscillator
+        this.morphOsc = this.ctx.createOscillator();
+        this.morphOsc.type = 'sawtooth';
+        this.morphOsc.frequency.value = this.morphBaseFreq;
+        
+        // Filter for timbre control
+        this.morphFilter = this.ctx.createBiquadFilter();
+        this.morphFilter.type = 'lowpass';
+        this.morphFilter.frequency.value = 200;
+        this.morphFilter.Q.value = 2;
+        
+        // LFO for gentle movement
+        this.morphLFO = this.ctx.createOscillator();
+        this.morphLFO.type = 'sine';
+        this.morphLFO.frequency.value = 0.1;
+        
+        const lfoGain = this.ctx.createGain();
+        lfoGain.gain.value = 10;
+        
+        this.morphLFO.connect(lfoGain);
+        lfoGain.connect(this.morphOsc.frequency);
+        
+        const morphGain = this.ctx.createGain();
+        morphGain.gain.value = 0.4;
+        
+        this.morphOsc.connect(this.morphFilter);
+        this.morphFilter.connect(morphGain);
+        morphGain.connect(this.masterGain);
+        
+        this.morphOsc.start();
+        this.morphLFO.start();
+        
+        this.morphGainNode = morphGain;
+      }
+      
+      updateMorphing(brainwaves) {
+        if (!this.morphOsc) return;
+        
+        // Relaxation index: high alpha+theta vs high beta+gamma
+        const relaxation = (brainwaves.alpha + brainwaves.theta) / (brainwaves.beta + brainwaves.gamma + 0.1);
+        const normalizedRelax = Math.min(1, relaxation / 2); // More sensitive range
+        
+        // MORE DRAMATIC: Filter sweeps widely with relaxation
+        const filterFreq = 80 + normalizedRelax * 1500 * this.morphIntensity; // Much wider sweep!
+        this.morphFilter.frequency.setTargetAtTime(filterFreq, this.ctx.currentTime, 0.03); // Faster
+        
+        // Resonance changes dramatically
+        const q = 0.5 + (1 - normalizedRelax) * 12; // 0.5-12.5 Q range
+        this.morphFilter.Q.setTargetAtTime(q, this.ctx.currentTime, 0.03);
+        
+        // Dramatic frequency drift based on dominant brainwave
+        const dominantFreq = this.morphBaseFreq * (0.7 + normalizedRelax * 0.6); // ±30% range
+        this.morphOsc.frequency.setTargetAtTime(dominantFreq, this.ctx.currentTime, 0.05);
+        
+        // Volume also responds to overall brain activity
+        const activity = (brainwaves.delta + brainwaves.theta + brainwaves.alpha + brainwaves.beta + brainwaves.gamma) / 5;
+        if (this.morphGainNode) {
+          this.morphGainNode.gain.setTargetAtTime(0.2 + activity * 0.6, this.ctx.currentTime, 0.03);
+        }
+      }
+      
+      setMorphBaseFreq(freq) {
+        this.morphBaseFreq = freq;
+        if (this.morphOsc) {
+          this.morphOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.1);
+        }
+      }
+      
+      setMorphIntensity(intensity) {
+        this.morphIntensity = intensity;
+      }
+      
+      stopMorphing() {
+        if (this.morphOsc) { try { this.morphOsc.stop(); this.morphOsc.disconnect(); } catch(e){} }
+        if (this.morphLFO) { try { this.morphLFO.stop(); this.morphLFO.disconnect(); } catch(e){} }
+        if (this.morphFilter) { try { this.morphFilter.disconnect(); } catch(e){} }
+        if (this.morphGainNode) { try { this.morphGainNode.disconnect(); } catch(e){} }
+        this.morphOsc = null;
+        this.morphLFO = null;
+        this.morphFilter = null;
+      }
+      
+      // ========== RHYTHMIC MODE ==========
+      
+      startRhythmic() {
+        // Create multiple oscillators with LFO-controlled amplitude
+        const freqs = [40, 80, 120];
+        
+        freqs.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          
+          const gain = this.ctx.createGain();
+          gain.gain.value = 0;
+          
+          // LFO for pulsing
+          const lfo = this.ctx.createOscillator();
+          lfo.type = 'sine';
+          lfo.frequency.value = this.rhythmTempo / 60 * (i + 1) * 0.5; // Different rates
+          
+          const lfoGain = this.ctx.createGain();
+          lfoGain.gain.value = 0.3;
+          
+          lfo.connect(lfoGain);
+          lfoGain.connect(gain.gain);
+          
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          
+          osc.start();
+          lfo.start();
+          
+          this.rhythmOscs.push({ osc, gain, lfoGain });
+          this.rhythmLFOs.push(lfo);
+        });
+      }
+      
+      updateRhythmic(brainwaves) {
+        if (this.rhythmOscs.length === 0) return;
+        
+        // Each brainwave controls a different rhythm layer
+        const waveStrengths = [brainwaves.delta, brainwaves.theta, brainwaves.alpha];
+        
+        this.rhythmOscs.forEach((r, i) => {
+          const strength = waveStrengths[i] || 0.3;
+          // MORE DRAMATIC: Full volume range with power curve for sensitivity
+          const vol = Math.pow(strength, 0.6) * this.rhythmDepth * 0.7;
+          r.lfoGain.gain.setTargetAtTime(vol, this.ctx.currentTime, 0.02); // Much faster!
+          
+          // Also shift oscillator frequency based on brainwave
+          const baseFreqs = [40, 80, 120];
+          const freqShift = (strength - 0.5) * 30; // ±15 Hz shift
+          r.osc.frequency.setTargetAtTime(baseFreqs[i] + freqShift, this.ctx.currentTime, 0.03);
+        });
+        
+        // Beta and Gamma dramatically affect rhythm speed
+        const speedMod = 0.5 + brainwaves.beta * 1.0 + brainwaves.gamma * 1.5; // 0.5x to 3x speed
+        this.rhythmLFOs.forEach((lfo, i) => {
+          const baseRate = this.rhythmTempo / 60 * (i + 1) * 0.5;
+          lfo.frequency.setTargetAtTime(baseRate * speedMod, this.ctx.currentTime, 0.03);
+        });
+      }
+      
+      setRhythmTempo(tempo) {
+        this.rhythmTempo = tempo;
+        this.rhythmLFOs.forEach((lfo, i) => {
+          lfo.frequency.setTargetAtTime(tempo / 60 * (i + 1) * 0.5, this.ctx.currentTime, 0.1);
+        });
+      }
+      
+      setRhythmDepth(depth) {
+        this.rhythmDepth = depth;
+      }
+      
+      stopRhythmic() {
+        this.rhythmOscs.forEach(r => {
+          try { r.osc.stop(); r.osc.disconnect(); r.gain.disconnect(); } catch(e){}
+        });
+        this.rhythmLFOs.forEach(l => {
+          try { l.stop(); l.disconnect(); } catch(e){}
+        });
+        this.rhythmOscs = [];
+        this.rhythmLFOs = [];
+      }
+      
+      // ========== REWARD MODE ==========
+      
+      startReward() {
+        this.rewardThreshold = 0.5;
+        this.rewardFreq = 45;
+        this.rewardVoicing = 'minor';
+        this.rewardOscs = [];
+        this.rewardGains = [];
+        
+        // Extended chord with high chime notes
+        // Minor 9/11/13 with upper extensions for sparkle
+        this.minorRatios = [
+          1,        // Root (bass)
+          1.2,      // Minor 3rd
+          1.5,      // Perfect 5th
+          1.8,      // Minor 7th
+          2.25,     // 9th
+          2.67,     // 11th
+          3.4,      // 13th
+          4,        // Octave up root (chime)
+          4.5,      // High 9th (chime)
+          6,        // High 5th (sparkle)
+          8         // 2 octaves up (shimmer)
+        ];
+        
+        // Lydian Dominant with bright extensions
+        this.lydianRatios = [
+          1,        // Root
+          2,        // Octave
+          3,        // 5th + octave
+          4,        // 2 octaves
+          5,        // Major 3rd + 2 oct
+          6,        // 5th + 2 oct
+          7,        // ~b7 + 2 oct
+          8,        // 3 octaves (chime)
+          10,       // Major 3rd + 3 oct (sparkle)
+          12,       // 5th + 3 oct (shimmer)
+          16        // 4 octaves (air)
+        ];
+        
+        // Volume curves - bass foundation + bright chimes on top
+        this.voiceVolumes = [0.35, 0.2, 0.18, 0.15, 0.15, 0.12, 0.12, 0.25, 0.2, 0.18, 0.15];
+        
+        // Create master gain
+        this.rewardMasterGain = this.ctx.createGain();
+        this.rewardMasterGain.gain.value = 0;
+        
+        // High-pass filter for chimes (separate from bass)
+        this.chimeFilter = this.ctx.createBiquadFilter();
+        this.chimeFilter.type = 'highpass';
+        this.chimeFilter.frequency.value = 400;
+        this.chimeFilter.Q.value = 0.5;
+        
+        // Gentle low-pass on everything for warmth
+        this.rewardFilter = this.ctx.createBiquadFilter();
+        this.rewardFilter.type = 'lowpass';
+        this.rewardFilter.frequency.value = 3000;
+        this.rewardFilter.Q.value = 0.5;
+        
+        // Reverb-like effect using delay
+        this.rewardDelay = this.ctx.createDelay();
+        this.rewardDelay.delayTime.value = 0.15;
+        this.delayGain = this.ctx.createGain();
+        this.delayGain.gain.value = 0.3;
+        
+        // Shimmer LFO for gentle movement
+        this.shimmerLFO = this.ctx.createOscillator();
+        this.shimmerLFO.type = 'sine';
+        this.shimmerLFO.frequency.value = 0.2;
+        this.shimmerGain = this.ctx.createGain();
+        this.shimmerGain.gain.value = 3;
+        this.shimmerLFO.connect(this.shimmerGain);
+        this.shimmerLFO.start();
+        
+        // Second shimmer for high notes
+        this.shimmerLFO2 = this.ctx.createOscillator();
+        this.shimmerLFO2.type = 'sine';
+        this.shimmerLFO2.frequency.value = 0.4;
+        this.shimmerGain2 = this.ctx.createGain();
+        this.shimmerGain2.gain.value = 5;
+        this.shimmerLFO2.connect(this.shimmerGain2);
+        this.shimmerLFO2.start();
+        
+        // Create chord oscillators
+        this.createChordOscillators();
+        
+        // Connect: oscillators -> filter -> delay -> master
+        this.rewardFilter.connect(this.rewardMasterGain);
+        this.rewardFilter.connect(this.rewardDelay);
+        this.rewardDelay.connect(this.delayGain);
+        this.delayGain.connect(this.rewardMasterGain);
+        this.rewardMasterGain.connect(this.masterGain);
+      }
+      
+      createChordOscillators() {
+        // Stop existing oscillators
+        if (this.rewardOscs) {
+          this.rewardOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch(e){} });
+        }
+        if (this.rewardGains) {
+          this.rewardGains.forEach(g => { try { g.disconnect(); } catch(e){} });
+        }
+        this.rewardOscs = [];
+        this.rewardGains = [];
+        
+        const ratios = this.rewardVoicing === 'lydian' ? this.lydianRatios : this.minorRatios;
+        const rootFreq = this.rewardFreq || 45;
+        
+        ratios.forEach((ratio, i) => {
+          const freq = rootFreq * ratio;
+          
+          // Choose waveform based on frequency range
+          const osc = this.ctx.createOscillator();
+          if (freq < 100) {
+            osc.type = 'sine'; // Pure bass
+          } else if (freq < 400) {
+            osc.type = 'triangle'; // Warm mids
+          } else {
+            osc.type = 'sine'; // Crystal highs
+          }
+          osc.frequency.value = freq;
+          
+          // Add shimmer to mid and high frequencies
+          if (freq > 150 && freq < 600) {
+            this.shimmerGain.connect(osc.frequency);
+          } else if (freq >= 600) {
+            this.shimmerGain2.connect(osc.frequency);
+          }
+          
+          // Individual gain
+          const gain = this.ctx.createGain();
+          gain.gain.value = 0;
+          
+          osc.connect(gain);
+          gain.connect(this.rewardFilter);
+          osc.start();
+          
+          this.rewardOscs.push(osc);
+          this.rewardGains.push(gain);
+        });
+      }
+      
+      updateReward(brainwaves) {
+        const targetValue = brainwaves[this.targetState] || 0;
+        const threshold = this.rewardThreshold || 0.5;
+        
+        // Smooth the input
+        if (!this._smoothedRewardValue) this._smoothedRewardValue = 0;
+        this._smoothedRewardValue = this._smoothedRewardValue * 0.85 + targetValue * 0.15;
+        const smoothedValue = this._smoothedRewardValue;
+        
+        // Calculate reward intensity
+        let rewardVolume = 0;
+        if (smoothedValue >= threshold) {
+          rewardVolume = (smoothedValue - threshold) / (1 - threshold);
+          rewardVolume = Math.pow(rewardVolume, 0.5);
+        }
+        
+        // Only update audio if oscillators are created
+        if (this.rewardOscs && this.rewardOscs.length > 0 && this.ctx) {
+          const fadeTime = rewardVolume > (this._lastRewardVolume || 0) ? 0.4 : 0.8;
+          this._lastRewardVolume = rewardVolume;
+          
+          // Apply volumes with beautiful staggered bloom - high notes come in later
+          this.rewardGains.forEach((gain, i) => {
+            const voiceVol = (this.voiceVolumes[i] || 0.1) * rewardVolume;
+            // Stagger: bass first, then mids, then chimes bloom last for "aha" effect
+            const stagger = i * 0.05;
+            gain.gain.setTargetAtTime(voiceVol, this.ctx.currentTime + stagger, fadeTime);
+          });
+          
+          // Master volume - louder overall
+          if (this.rewardMasterGain) {
+            this.rewardMasterGain.gain.setTargetAtTime(rewardVolume * 0.9, this.ctx.currentTime, fadeTime);
+          }
+          
+          // Open filter wide as reward increases - let the chimes through!
+          if (this.rewardFilter) {
+            const filterFreq = 800 + rewardVolume * 4000; // Opens up to 4800Hz
+            this.rewardFilter.frequency.setTargetAtTime(filterFreq, this.ctx.currentTime, fadeTime * 0.3);
+          }
+          
+          // Delay (reverb) increases with reward for ethereal quality
+          if (this.delayGain) {
+            this.delayGain.gain.setTargetAtTime(rewardVolume * 0.4, this.ctx.currentTime, fadeTime);
+          }
+          
+          // Shimmer speeds up slightly when enlightened
+          if (this.shimmerLFO) {
+            this.shimmerLFO.frequency.setTargetAtTime(0.15 + rewardVolume * 0.3, this.ctx.currentTime, 0.5);
+          }
+          if (this.shimmerLFO2) {
+            this.shimmerLFO2.frequency.setTargetAtTime(0.3 + rewardVolume * 0.5, this.ctx.currentTime, 0.5);
+          }
+        }
+        
+        // Always return values for UI display
+        return { targetValue: smoothedValue, threshold, rewardVolume, isRewarding: smoothedValue >= threshold };
+      }
+      
+      setRewardThreshold(threshold) {
+        this.rewardThreshold = threshold;
+      }
+      
+      setRewardFreq(freq) {
+        this.rewardFreq = freq;
+        if (this.rewardOscs && this.rewardOscs.length > 0 && this.ctx) {
+          const ratios = this.rewardVoicing === 'lydian' ? this.lydianRatios : this.minorRatios;
+          this.rewardOscs.forEach((osc, i) => {
+            osc.frequency.setTargetAtTime(freq * ratios[i], this.ctx.currentTime, 0.3);
+          });
+        }
+      }
+      
+      setRewardVoicing(voicing) {
+        this.rewardVoicing = voicing;
+        if (this.rewardOscs && this.rewardOscs.length > 0) {
+          // Recreate oscillators with new voicing
+          this.createChordOscillators();
+        }
+      }
+      
+      stopReward() {
+        if (this.rewardOscs) {
+          this.rewardOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch(e){} });
+        }
+        if (this.rewardGains) {
+          this.rewardGains.forEach(g => { try { g.disconnect(); } catch(e){} });
+        }
+        if (this.shimmerLFO) { try { this.shimmerLFO.stop(); this.shimmerLFO.disconnect(); } catch(e){} }
+        if (this.shimmerLFO2) { try { this.shimmerLFO2.stop(); this.shimmerLFO2.disconnect(); } catch(e){} }
+        if (this.shimmerGain) { try { this.shimmerGain.disconnect(); } catch(e){} }
+        if (this.shimmerGain2) { try { this.shimmerGain2.disconnect(); } catch(e){} }
+        if (this.rewardFilter) { try { this.rewardFilter.disconnect(); } catch(e){} }
+        if (this.chimeFilter) { try { this.chimeFilter.disconnect(); } catch(e){} }
+        if (this.rewardDelay) { try { this.rewardDelay.disconnect(); } catch(e){} }
+        if (this.delayGain) { try { this.delayGain.disconnect(); } catch(e){} }
+        if (this.rewardMasterGain) { try { this.rewardMasterGain.disconnect(); } catch(e){} }
+        this.rewardOscs = [];
+        this.rewardGains = [];
+      }
+      
+      // ========== THERAPEUTIC PRESETS ==========
+      
+      applyPreset(preset) {
+        switch (preset) {
+          case 'relaxation':
+            this.setMode('entrainment');
+            this.setTargetState('alpha');
+            this.layerFreqs = { delta: 40, theta: 100, alpha: 200, beta: 400, gamma: 800 };
+            break;
+          case 'sleep':
+            this.setMode('entrainment');
+            this.setTargetState('delta');
+            this.layerFreqs = { delta: 30, theta: 60, alpha: 120, beta: 240, gamma: 480 };
+            break;
+          case 'meditation':
+            this.setMode('entrainment');
+            this.setTargetState('theta');
+            this.layerFreqs = { delta: 40, theta: 80, alpha: 160, beta: 320, gamma: 640 };
+            break;
+          case 'pain':
+            this.setMode('layered');
+            this.layerFreqs = { delta: 174, theta: 285, alpha: 396, beta: 417, gamma: 528 };
+            // Restart layered with new freqs
+            if (this.currentMode === 'layered') {
+              this.stopLayered();
+              this.startLayered();
+            }
+            break;
+        }
+      }
+      
+      // ========== VISUALIZATION ==========
+      
+      startVisualization() {
+        const canvas = document.getElementById('waveform');
+        const ctx = canvas.getContext('2d');
+        
+        const draw = () => {
+          if (!this.isRunning) return;
+          requestAnimationFrame(draw);
+          
+          const rect = canvas.parentElement.getBoundingClientRect();
+          if (canvas.width !== rect.width || canvas.height !== rect.height) {
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+          }
+          
+          const width = canvas.width;
+          const height = canvas.height;
+          
+          const bufferLength = this.analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          this.analyser.getByteTimeDomainData(dataArray);
+          
+          ctx.fillStyle = '#12121a';
+          ctx.fillRect(0, 0, width, height);
+          
+          ctx.strokeStyle = '#2a2a3a';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, height / 2);
+          ctx.lineTo(width, height / 2);
+          ctx.stroke();
+          
+          ctx.strokeStyle = '#00d4aa';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          
+          const sliceWidth = width / bufferLength;
+          let x = 0;
+          
+          for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = v * height / 2;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+            x += sliceWidth;
+          }
+          
+          ctx.stroke();
+        };
+        
+        draw();
+      }
+      
+      // ========== STOP ALL ==========
+      
+      stopAll() {
+        this.stopCurrentMode();
+        
+        for (const [id, _] of this.manualOscs) {
+          this.removeManualTone(id);
+        }
+        
+        if (this.masterGain) {
+          this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+        }
+        
+        this.isRunning = false;
+        this.currentMode = null;
+        
+        setTimeout(() => {
+          if (this.ctx) { this.ctx.close(); this.ctx = null; }
+        }, 300);
+      }
+    }
+    
+    // ============================================
+    // UI CONTROLLER
+    // ============================================
+    
+    const engine = new TherapyEngine();
+    const muse = new MuseOSCHandler();
+    let currentPreset = null;
+    
+    // Start/Stop
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      await engine.init();
+      document.getElementById('startBtn').classList.add('active');
+      document.getElementById('audioStatus').classList.add('active');
+      document.getElementById('audioStatusText').textContent = 'Audio: Running';
+    });
+    
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      engine.stopAll();
+      document.getElementById('startBtn').classList.remove('active');
+      document.getElementById('audioStatus').classList.remove('active');
+      document.getElementById('audioStatusText').textContent = 'Audio: Stopped';
+      document.getElementById('toneList').innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-dim);">Click "+ ADD TONE" to create a manual oscillator</div>';
+      document.getElementById('toneCount').textContent = '0 tones';
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.therapy-preset').forEach(b => b.classList.remove('active'));
+      document.getElementById('modeStatus').textContent = 'Select a mode';
+      document.getElementById('modeStatusBar').textContent = 'Mode: None';
+      document.getElementById('layersDisplay').style.display = 'none';
+      document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+    });
+    
+    // Muse connection
+    document.getElementById('museBtn').addEventListener('click', () => {
+      if (muse.connected) muse.disconnect();
+      else muse.connect();
+    });
+    
+    document.getElementById('museDisconnect').addEventListener('click', () => muse.disconnect());
+    
+    muse.onConnect = () => {
+      document.getElementById('museBtn').classList.add('active');
+      document.getElementById('museBtn').innerHTML = '<span>🧠</span> CONNECTED';
+      document.getElementById('museSection').style.display = 'block';
+      document.getElementById('museStatusDot').classList.add('active');
+      document.getElementById('museStatusBar').textContent = 'Muse: Connected';
+      startWaveAnimation();
+    };
+    
+    muse.onDisconnect = () => {
+      document.getElementById('museBtn').classList.remove('active');
+      document.getElementById('museBtn').innerHTML = '<span>🧠</span> CONNECT MUSE';
+      document.getElementById('museSection').style.display = 'none';
+      document.getElementById('museStatusDot').classList.remove('active');
+      document.getElementById('museStatusBar').textContent = 'Muse: Disconnected';
+      stopWaveAnimation();
+    };
+    
+    // Brainwave visualization
+    const waveColors = {
+      delta: '#ff6b6b',
+      theta: '#ffa502',
+      alpha: '#2ed573',
+      beta: '#1e90ff',
+      gamma: '#a55eea'
+    };
+    
+    const waveFreqs = {
+      delta: 2,    // 0.5-4 Hz
+      theta: 6,    // 4-8 Hz
+      alpha: 10,   // 8-12 Hz
+      beta: 20,    // 12-30 Hz
+      gamma: 40    // 30-100 Hz
+    };
+    
+    let brainwaveData = { delta: 0, theta: 0, alpha: 0, beta: 0, gamma: 0 };
+    let wavePhase = 0;
+    let waveAnimationId = null;
+    
+    function drawWave(canvasId, value, color, freq) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.parentElement.getBoundingClientRect();
+      
+      if (canvas.width !== rect.width || canvas.height !== rect.height) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+      
+      const w = canvas.width;
+      const h = canvas.height;
+      
+      // Clear
+      ctx.fillStyle = '#0a0a0f';
+      ctx.fillRect(0, 0, w, h);
+      
+      // Draw center line
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.stroke();
+      
+      // Draw sine wave
+      const amplitude = value * (h / 2 - 4);
+      const wavelength = w / (freq * 0.3);
+      
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = value * 10;
+      ctx.beginPath();
+      
+      for (let x = 0; x <= w; x++) {
+        const y = h / 2 + Math.sin((x / wavelength) * Math.PI * 2 + wavePhase * freq * 0.1) * amplitude;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      
+      // Fill under the wave with gradient
+      if (value > 0.05) {
+        ctx.beginPath();
+        for (let x = 0; x <= w; x++) {
+          const y = h / 2 + Math.sin((x / wavelength) * Math.PI * 2 + wavePhase * freq * 0.1) * amplitude;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        
+        const gradient = ctx.createLinearGradient(0, h/2, 0, h);
+        gradient.addColorStop(0, color + '40');
+        gradient.addColorStop(1, color + '00');
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
+    }
+    
+    function animateWaves() {
+      wavePhase += 0.15;
+      
+      drawWave('deltaCanvas', brainwaveData.delta, waveColors.delta, waveFreqs.delta);
+      drawWave('thetaCanvas', brainwaveData.theta, waveColors.theta, waveFreqs.theta);
+      drawWave('alphaCanvas', brainwaveData.alpha, waveColors.alpha, waveFreqs.alpha);
+      drawWave('betaCanvas', brainwaveData.beta, waveColors.beta, waveFreqs.beta);
+      drawWave('gammaCanvas', brainwaveData.gamma, waveColors.gamma, waveFreqs.gamma);
+      
+      waveAnimationId = requestAnimationFrame(animateWaves);
+    }
+    
+    // Start wave animation when muse section is visible
+    function startWaveAnimation() {
+      if (!waveAnimationId) {
+        animateWaves();
+      }
+    }
+    
+    function stopWaveAnimation() {
+      if (waveAnimationId) {
+        cancelAnimationFrame(waveAnimationId);
+        waveAnimationId = null;
+      }
+    }
+    
+    muse.onData = (data) => {
+      brainwaveData = data;
+      
+      // Update value displays - show actual dB values
+      document.getElementById('deltaVal').textContent = data.deltaDb ? data.deltaDb.toFixed(1) + ' dB' : '-- dB';
+      document.getElementById('thetaVal').textContent = data.thetaDb ? data.thetaDb.toFixed(1) + ' dB' : '-- dB';
+      document.getElementById('alphaVal').textContent = data.alphaDb ? data.alphaDb.toFixed(1) + ' dB' : '-- dB';
+      document.getElementById('betaVal').textContent = data.betaDb ? data.betaDb.toFixed(1) + ' dB' : '-- dB';
+      document.getElementById('gammaVal').textContent = data.gammaDb ? data.gammaDb.toFixed(1) + ' dB' : '-- dB';
+      
+      // Update therapy mode
+      let coherence = 0;
+      if (engine.currentMode === 'entrainment') {
+        coherence = engine.updateEntrainment(data);
+      } else if (engine.currentMode === 'layered') {
+        engine.updateLayered(data);
+        // Update layer display
+        document.getElementById('layerBarDelta').style.height = `${data.delta * 100}%`;
+        document.getElementById('layerBarTheta').style.height = `${data.theta * 100}%`;
+        document.getElementById('layerBarAlpha').style.height = `${data.alpha * 100}%`;
+        document.getElementById('layerBarBeta').style.height = `${data.beta * 100}%`;
+        document.getElementById('layerBarGamma').style.height = `${data.gamma * 100}%`;
+      } else if (engine.currentMode === 'morphing') {
+        engine.updateMorphing(data);
+      } else if (engine.currentMode === 'rhythmic') {
+        engine.updateRhythmic(data);
+      } else if (engine.currentMode === 'reward') {
+        const result = engine.updateReward(data);
+        if (result) {
+          // Update reward panel UI
+          const currentPct = Math.round(result.targetValue * 100);
+          document.getElementById('rewardCurrentValue').textContent = currentPct + '%';
+          document.getElementById('rewardLevelFill').style.width = currentPct + '%';
+          
+          // Update reward status icon and styling
+          const statusEl = document.getElementById('rewardStatus');
+          const fillEl = document.getElementById('rewardLevelFill');
+          if (result.isRewarding) {
+            statusEl.textContent = '🔊';
+            fillEl.classList.add('rewarding');
+          } else {
+            statusEl.textContent = '🔇';
+            fillEl.classList.remove('rewarding');
+          }
+        }
+      }
+      
+      // Update coherence meter
+      if (engine.currentMode === 'entrainment') {
+        coherence = data[engine.targetState] || 0;
+      } else {
+        // General coherence: how balanced are the waves
+        const avg = (data.delta + data.theta + data.alpha + data.beta + data.gamma) / 5;
+        const variance = Math.abs(data.delta - avg) + Math.abs(data.theta - avg) + Math.abs(data.alpha - avg);
+        coherence = Math.max(0, 1 - variance);
+      }
+      
+      document.getElementById('coherenceFill').style.width = `${coherence * 100}%`;
+      document.getElementById('coherenceValue').textContent = `${Math.round(coherence * 100)}%`;
+    };
+    
+    // Mode selection
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const mode = btn.dataset.mode;
+        
+        if (!engine.ctx) {
+          await engine.init();
+          document.getElementById('startBtn').classList.add('active');
+          document.getElementById('audioStatus').classList.add('active');
+          document.getElementById('audioStatusText').textContent = 'Audio: Running';
+        }
+        
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById(`${mode}Panel`);
+        if (panel) panel.classList.add('active');
+        
+        engine.setMode(mode);
+        
+        const modeNames = { entrainment: 'Entrainment', layered: 'Layered', morphing: 'Morphing', rhythmic: 'Rhythmic', reward: 'Reward' };
+        document.getElementById('modeStatus').textContent = modeNames[mode];
+        document.getElementById('modeStatusBar').textContent = `Mode: ${modeNames[mode]}`;
+        
+        document.getElementById('layersDisplay').style.display = mode === 'layered' ? 'block' : 'none';
+      });
+    });
+    
+    // Therapeutic presets
+    document.querySelectorAll('.therapy-preset').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const preset = btn.dataset.preset;
+        
+        if (!engine.ctx) {
+          await engine.init();
+          document.getElementById('startBtn').classList.add('active');
+          document.getElementById('audioStatus').classList.add('active');
+          document.getElementById('audioStatusText').textContent = 'Audio: Running';
+        }
+        
+        document.querySelectorAll('.therapy-preset').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        engine.applyPreset(preset);
+        currentPreset = preset;
+        
+        // Update mode buttons
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        const modeBtn = document.querySelector(`.mode-btn[data-mode="${engine.currentMode}"]`);
+        if (modeBtn) modeBtn.classList.add('active');
+        
+        // Show appropriate panel
+        document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById(`${engine.currentMode}Panel`);
+        if (panel) panel.classList.add('active');
+        
+        const modeNames = { entrainment: 'Entrainment', layered: 'Layered', morphing: 'Morphing', rhythmic: 'Rhythmic', reward: 'Reward' };
+        document.getElementById('modeStatus').textContent = `${modeNames[engine.currentMode]} - ${btn.querySelector('.preset-name').textContent}`;
+        document.getElementById('modeStatusBar').textContent = `Mode: ${btn.querySelector('.preset-name').textContent}`;
+        
+        // Update target badge
+        const targetDescs = { delta: 'Deep sleep state', theta: 'Meditative state', alpha: 'Relaxed focus state', beta: 'Active focus state' };
+        document.getElementById('targetBadge').className = `target-badge ${engine.targetState}`;
+        document.getElementById('targetBadge').textContent = engine.targetState.charAt(0).toUpperCase() + engine.targetState.slice(1);
+        document.getElementById('targetDesc').textContent = targetDescs[engine.targetState] || '';
+        
+        // Update target buttons
+        document.querySelectorAll('.target-btn').forEach(t => t.classList.remove('active'));
+        const targetBtn = document.querySelector(`.target-btn[data-target="${engine.targetState}"]`);
+        if (targetBtn) targetBtn.classList.add('active');
+        
+        document.getElementById('layersDisplay').style.display = engine.currentMode === 'layered' ? 'block' : 'none';
+      });
+    });
+    
+    // Target state selection
+    document.querySelectorAll('.target-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const target = btn.dataset.target;
+        engine.setTargetState(target);
+        
+        const targetDescs = { delta: 'Deep sleep state', theta: 'Meditative state', alpha: 'Relaxed focus state', beta: 'Active focus state' };
+        document.getElementById('targetBadge').className = `target-badge ${target}`;
+        document.getElementById('targetBadge').textContent = target.charAt(0).toUpperCase() + target.slice(1);
+        document.getElementById('targetDesc').textContent = targetDescs[target] || '';
+      });
+    });
+    
+    // Layer mixer
+    ['delta', 'theta', 'alpha', 'beta', 'gamma'].forEach(wave => {
+      const slider = document.getElementById(`layer${wave.charAt(0).toUpperCase() + wave.slice(1)}`);
+      if (slider) {
+        slider.addEventListener('input', (e) => {
+          engine.setLayerGain(wave, parseFloat(e.target.value) / 100);
+        });
+      }
+    });
+    
+    // Morphing controls
+    document.getElementById('morphBaseFreq')?.addEventListener('input', (e) => {
+      engine.setMorphBaseFreq(parseFloat(e.target.value));
+    });
+    
+    document.getElementById('morphIntensity')?.addEventListener('input', (e) => {
+      engine.setMorphIntensity(parseFloat(e.target.value) / 100);
+    });
+    
+    // Rhythmic controls
+    document.getElementById('rhythmTempo')?.addEventListener('input', (e) => {
+      engine.setRhythmTempo(parseFloat(e.target.value));
+    });
+    
+    document.getElementById('rhythmDepth')?.addEventListener('input', (e) => {
+      engine.setRhythmDepth(parseFloat(e.target.value) / 100);
+    });
+    
+    // Reward controls
+    document.getElementById('rewardThreshold')?.addEventListener('input', (e) => {
+      const threshold = parseFloat(e.target.value) / 100;
+      engine.setRewardThreshold(threshold);
+      document.getElementById('thresholdDisplay').textContent = e.target.value;
+      document.getElementById('rewardThresholdValue').textContent = e.target.value + '%';
+      document.getElementById('rewardThresholdLine').style.left = e.target.value + '%';
+    });
+    
+    document.getElementById('rewardFreq')?.addEventListener('input', (e) => {
+      const freq = parseFloat(e.target.value);
+      engine.setRewardFreq(freq);
+      document.getElementById('rewardFreqDisplay').textContent = freq;
+    });
+    
+    // Voicing selector
+    document.querySelectorAll('.voicing-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.voicing-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        engine.setRewardVoicing(btn.dataset.voicing);
+      });
+    });
+    
+    // Initialize reward threshold line position
+    document.getElementById('rewardThresholdLine').style.left = '50%';
+    
+    // Master volume
+    document.getElementById('masterVolume').addEventListener('input', (e) => {
+      const v = parseFloat(e.target.value) / 100;
+      engine.setMasterVolume(v);
+      document.getElementById('masterValue').textContent = `${Math.round(v * 100)}%`;
+    });
+    
+    // Manual tone controls
+    let toneIdCounter = 0;
+    const toneElements = new Map();
+    
+    document.getElementById('addToneBtn').addEventListener('click', async () => {
+      if (!engine.ctx) {
+        await engine.init();
+        document.getElementById('startBtn').classList.add('active');
+        document.getElementById('audioStatus').classList.add('active');
+        document.getElementById('audioStatusText').textContent = 'Audio: Running';
+      }
+      
+      const container = document.getElementById('toneList');
+      if (container.textContent.includes('ADD TONE')) {
+        container.innerHTML = '';
+      }
+      
+      const id = engine.addManualTone(40, 'sine', 0.5);
+      if (id) {
+        createToneUI(id, 40, 'sine', 0.5);
+        updateToneCount();
+      }
+    });
+    
+    function createToneUI(id, freq, waveform, volume) {
+      const container = document.getElementById('toneList');
+      
+      const el = document.createElement('div');
+      el.className = 'tone-item';
+      el.id = `tone-${id}`;
+      el.innerHTML = `
+        <div class="tone-header">
+          <div class="tone-freq">
+            <input type="number" class="freq-input" value="${freq}" min="0.1" max="2000" step="0.1"> 
+            <span>Hz</span>
+          </div>
+          <button class="btn btn-small danger" onclick="removeTone(${id})">✕</button>
+        </div>
+        <div class="tone-controls-row">
+          <input type="range" class="freq-slider" min="1" max="500" step="0.1" value="${freq}">
+          <select class="wave-select">
+            <option value="sine" ${waveform === 'sine' ? 'selected' : ''}>Sine</option>
+            <option value="triangle" ${waveform === 'triangle' ? 'selected' : ''}>Triangle</option>
+            <option value="square" ${waveform === 'square' ? 'selected' : ''}>Square</option>
+            <option value="sawtooth" ${waveform === 'sawtooth' ? 'selected' : ''}>Saw</option>
+          </select>
+          <input type="range" class="vol-slider" min="0" max="100" value="${volume * 100}" style="width: 80px;">
+        </div>
+      `;
+      
+      container.appendChild(el);
+      
+      const freqInput = el.querySelector('.freq-input');
+      const freqSlider = el.querySelector('.freq-slider');
+      const waveSelect = el.querySelector('.wave-select');
+      const volSlider = el.querySelector('.vol-slider');
+      
+      // Sync input and slider
+      freqInput.addEventListener('input', (e) => {
+        const f = parseFloat(e.target.value) || 1;
+        freqSlider.value = Math.min(500, Math.max(1, f));
+        engine.updateManualTone(id, { freq: f });
+      });
+      
+      freqSlider.addEventListener('input', (e) => {
+        const f = parseFloat(e.target.value);
+        freqInput.value = f.toFixed(1);
+        engine.updateManualTone(id, { freq: f });
+      });
+      
+      waveSelect.addEventListener('change', (e) => {
+        engine.updateManualTone(id, { waveform: e.target.value });
+      });
+      
+      volSlider.addEventListener('input', (e) => {
+        engine.updateManualTone(id, { volume: parseFloat(e.target.value) / 100 });
+      });
+      
+      toneElements.set(id, el);
+    }
+    
+    window.removeTone = (id) => {
+      engine.removeManualTone(id);
+      const el = toneElements.get(id);
+      if (el) { el.remove(); toneElements.delete(id); }
+      updateToneCount();
+      
+      if (toneElements.size === 0) {
+        document.getElementById('toneList').innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-dim);">Click "+ ADD TONE" to create a manual oscillator</div>';
+      }
+    };
+    
+    function updateToneCount() {
+      document.getElementById('toneCount').textContent = `${engine.manualOscs.size} tone${engine.manualOscs.size !== 1 ? 's' : ''}`;
+    }
+    
+    // Frequency presets
+    document.querySelectorAll('.freq-preset').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const freq = parseFloat(btn.dataset.freq);
+        
+        if (!engine.ctx) {
+          await engine.init();
+          document.getElementById('startBtn').classList.add('active');
+          document.getElementById('audioStatus').classList.add('active');
+          document.getElementById('audioStatusText').textContent = 'Audio: Running';
+        }
+        
+        const container = document.getElementById('toneList');
+        if (container.textContent.includes('ADD TONE')) {
+          container.innerHTML = '';
+        }
+        
+        const id = engine.addManualTone(freq, 'sine', 0.5);
+        if (id) {
+          createToneUI(id, freq, 'sine', 0.5);
+          updateToneCount();
+        }
+      });
+    });
+    
+    // ============================================
+    // BINAURAL BEATS SYSTEM
+    // ============================================
+    
+    const binauralState = {
+      isPlaying: false,
+      beatFreq: 10,
+      carrierFreq: 200,
+      targetBand: 'alpha',
+      leftOsc: null,
+      rightOsc: null,
+      leftGain: null,
+      rightGain: null,
+      merger: null,
+      masterGain: null
+    };
+    
+    function startBinaural() {
+      if (binauralState.isPlaying) return;
+      if (!engine.ctx) {
+        engine.init().then(() => {
+          document.getElementById('startBtn').classList.add('active');
+          document.getElementById('audioStatus').classList.add('active');
+          document.getElementById('audioStatusText').textContent = 'Audio: Running';
+          createBinauralOscillators();
+        });
+      } else {
+        createBinauralOscillators();
+      }
+    }
+    
+    function createBinauralOscillators() {
+      const ctx = engine.ctx;
+      const beat = binauralState.beatFreq;
+      const carrier = binauralState.carrierFreq;
+      
+      // Create stereo merger
+      binauralState.merger = ctx.createChannelMerger(2);
+      
+      // Left oscillator (carrier - beat/2)
+      binauralState.leftOsc = ctx.createOscillator();
+      binauralState.leftOsc.type = 'sine';
+      binauralState.leftOsc.frequency.value = carrier - beat / 2;
+      
+      // Right oscillator (carrier + beat/2)
+      binauralState.rightOsc = ctx.createOscillator();
+      binauralState.rightOsc.type = 'sine';
+      binauralState.rightOsc.frequency.value = carrier + beat / 2;
+      
+      // Individual gains for each channel
+      binauralState.leftGain = ctx.createGain();
+      binauralState.rightGain = ctx.createGain();
+      binauralState.leftGain.gain.value = 0.3;
+      binauralState.rightGain.gain.value = 0.3;
+      
+      // Master gain for binaural
+      binauralState.masterGain = ctx.createGain();
+      binauralState.masterGain.gain.value = 0;
+      
+      // Connect: oscillators -> individual gains -> merger -> master -> destination
+      binauralState.leftOsc.connect(binauralState.leftGain);
+      binauralState.rightOsc.connect(binauralState.rightGain);
+      binauralState.leftGain.connect(binauralState.merger, 0, 0);  // Left channel
+      binauralState.rightGain.connect(binauralState.merger, 0, 1);  // Right channel
+      binauralState.merger.connect(binauralState.masterGain);
+      binauralState.masterGain.connect(engine.masterGain);
+      
+      // Start oscillators
+      binauralState.leftOsc.start();
+      binauralState.rightOsc.start();
+      
+      // Fade in
+      binauralState.masterGain.gain.setTargetAtTime(1, ctx.currentTime, 0.3);
+      
+      binauralState.isPlaying = true;
+      updateBinauralDisplay();
+    }
+    
+    function stopBinaural() {
+      if (!binauralState.isPlaying) return;
+      
+      const ctx = engine.ctx;
+      if (binauralState.masterGain) {
+        binauralState.masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
+      }
+      
+      setTimeout(() => {
+        if (binauralState.leftOsc) {
+          binauralState.leftOsc.stop();
+          binauralState.leftOsc.disconnect();
+        }
+        if (binauralState.rightOsc) {
+          binauralState.rightOsc.stop();
+          binauralState.rightOsc.disconnect();
+        }
+        if (binauralState.leftGain) binauralState.leftGain.disconnect();
+        if (binauralState.rightGain) binauralState.rightGain.disconnect();
+        if (binauralState.merger) binauralState.merger.disconnect();
+        if (binauralState.masterGain) binauralState.masterGain.disconnect();
+        
+        binauralState.leftOsc = null;
+        binauralState.rightOsc = null;
+        binauralState.isPlaying = false;
+      }, 300);
+    }
+    
+    function updateBinauralFrequencies() {
+      if (!binauralState.isPlaying || !engine.ctx) return;
+      
+      const beat = binauralState.beatFreq;
+      const carrier = binauralState.carrierFreq;
+      const ctx = engine.ctx;
+      
+      binauralState.leftOsc.frequency.setTargetAtTime(carrier - beat / 2, ctx.currentTime, 0.1);
+      binauralState.rightOsc.frequency.setTargetAtTime(carrier + beat / 2, ctx.currentTime, 0.1);
+      
+      updateBinauralDisplay();
+    }
+    
+    function updateBinauralDisplay() {
+      const beat = binauralState.beatFreq;
+      const carrier = binauralState.carrierFreq;
+      
+      document.getElementById('leftFreq').textContent = Math.round(carrier - beat / 2);
+      document.getElementById('rightFreq').textContent = Math.round(carrier + beat / 2);
+      document.getElementById('beatFreq').textContent = beat;
+      document.getElementById('carrierValue').textContent = carrier;
+    }
+    
+    // Binaural toggle button
+    document.getElementById('binauralToggle').addEventListener('click', () => {
+      const btn = document.getElementById('binauralToggle');
+      if (binauralState.isPlaying) {
+        stopBinaural();
+        btn.textContent = 'OFF';
+        btn.classList.remove('active');
+      } else {
+        startBinaural();
+        btn.textContent = 'ON';
+        btn.classList.add('active');
+      }
+    });
+    
+    // Binaural preset buttons
+    document.querySelectorAll('.binaural-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.binaural-preset').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        binauralState.beatFreq = parseFloat(btn.dataset.beat);
+        binauralState.targetBand = btn.dataset.target;
+        
+        if (binauralState.isPlaying) {
+          updateBinauralFrequencies();
+        } else {
+          updateBinauralDisplay();
+        }
+      });
+    });
+    
+    // Carrier frequency slider
+    document.getElementById('carrierSlider').addEventListener('input', (e) => {
+      binauralState.carrierFreq = parseFloat(e.target.value);
+      if (binauralState.isPlaying) {
+        updateBinauralFrequencies();
+      } else {
+        updateBinauralDisplay();
+      }
+    });
+    
+    // Entrainment feedback - update based on Muse data
+    function updateEntrainmentFeedback(brainwaveData) {
+      if (!brainwaveData) return;
+      
+      const targetBand = binauralState.targetBand;
+      const targetValue = brainwaveData[targetBand] || 0;
+      
+      // Calculate entrainment progress (0-100%)
+      const progress = Math.min(100, Math.round(targetValue * 100));
+      
+      document.getElementById('entrainmentFill').style.width = progress + '%';
+      document.getElementById('entrainmentPercent').textContent = progress + '%';
+      
+      // Update status message
+      const statusEl = document.getElementById('entrainmentStatus');
+      const bandNames = { delta: 'Delta', theta: 'Theta', alpha: 'Alpha', beta: 'Beta', gamma: 'Gamma' };
+      const bandName = bandNames[targetBand] || targetBand;
+      
+      if (!binauralState.isPlaying) {
+        statusEl.textContent = `${bandName} level: ${progress}% - Turn ON binaural beats to entrain`;
+        statusEl.classList.remove('achieving');
+      } else if (progress >= 70) {
+        statusEl.textContent = `✓ Excellent ${bandName} entrainment! You're in the zone.`;
+        statusEl.classList.add('achieving');
+      } else if (progress >= 50) {
+        statusEl.textContent = `Good ${bandName} progress - keep relaxing into the beat.`;
+        statusEl.classList.remove('achieving');
+      } else if (progress >= 30) {
+        statusEl.textContent = `Building ${bandName} entrainment - breathe deeply.`;
+        statusEl.classList.remove('achieving');
+      } else {
+        statusEl.textContent = `Starting ${bandName} entrainment - allow your mind to follow.`;
+        statusEl.classList.remove('achieving');
+      }
+    }
+    
+    // Hook into muse data for entrainment feedback
+    // Store reference and create wrapper
+    const originalMuseDataHandler = muse.onData;
+    muse.onData = (data) => {
+      // Call original handler first
+      if (originalMuseDataHandler) {
+        originalMuseDataHandler(data);
+      }
+      // Then update binaural entrainment
+      updateEntrainmentFeedback(data);
+    };
+    
+    // Also update on brainwave data changes via the global brainwaveData
+    setInterval(() => {
+      if (muse.connected && brainwaveData) {
+        updateEntrainmentFeedback(brainwaveData);
+        
+        // Also update reward meter if in reward mode
+        if (engine.currentMode === 'reward') {
+          const result = engine.updateReward(brainwaveData);
+          if (result) {
+            const currentPct = Math.round(result.targetValue * 100);
+            document.getElementById('rewardCurrentValue').textContent = currentPct + '%';
+            document.getElementById('rewardLevelFill').style.width = currentPct + '%';
+            
+            const statusEl = document.getElementById('rewardStatus');
+            const fillEl = document.getElementById('rewardLevelFill');
+            if (result.isRewarding) {
+              statusEl.textContent = '🔊';
+              fillEl.classList.add('rewarding');
+            } else {
+              statusEl.textContent = '🔇';
+              fillEl.classList.remove('rewarding');
+            }
+          }
+        }
+      }
+    }, 200);
+    
+    // Initialize display
+    updateBinauralDisplay();
+    
+    // Setup Guide Toggle
+    const setupGuide = document.getElementById('setupGuide');
+    const setupToggle = document.getElementById('setupToggle');
+    const setupContent = document.getElementById('setupContent');
+    const bridgeStatus = document.getElementById('bridgeStatus');
+    const connectionInfo = document.getElementById('connectionInfo');
+    
+    if (setupToggle) {
+      setupToggle.addEventListener('click', () => {
+        setupGuide.classList.toggle('expanded');
+      });
+    }
+    
+    // Function to detect local IP using WebRTC
+    function detectLocalIP(callback) {
+      try {
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel('');
+        pc.createOffer().then(offer => pc.setLocalDescription(offer));
+        pc.onicecandidate = (ice) => {
+          if (ice && ice.candidate && ice.candidate.candidate) {
+            const match = ice.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+            if (match && !match[1].startsWith('0.')) {
+              callback(match[1]);
+              pc.close();
+            }
+          }
+        };
+        setTimeout(() => callback(null), 3000);
+      } catch (e) {
+        callback(null);
+      }
+    }
+    
+    // Check if OSC bridge is running
+    function checkBridge() {
+      const ws = new WebSocket('ws://localhost:8080');
+      let resolved = false;
+      
+      ws.onopen = () => {
+        resolved = true;
+        ws.close();
+        
+        // Bridge is running
+        if (bridgeStatus) {
+          bridgeStatus.className = 'status-check success';
+          bridgeStatus.innerHTML = '<span class="status-icon">✓</span><span>OSC Bridge is running!</span>';
+        }
+        
+        // Show quick connection info, hide setup guide
+        if (connectionInfo) {
+          connectionInfo.style.display = 'flex';
+        }
+        if (setupGuide) {
+          setupGuide.classList.remove('expanded');
+        }
+        
+        // Update the local IP in both places
+        detectLocalIP((ip) => {
+          const ipText = ip || 'Check terminal: ipconfig getifaddr en0';
+          document.querySelectorAll('#localIP, #localIP2').forEach(el => {
+            if (el) el.textContent = ipText;
+          });
+        });
+      };
+      
+      ws.onerror = () => {
+        if (!resolved) {
+          resolved = true;
+          
+          // Bridge not running
+          if (bridgeStatus) {
+            bridgeStatus.className = 'status-check error';
+            bridgeStatus.innerHTML = '<span class="status-icon">✗</span><span>OSC Bridge not detected. Follow the steps above to start it.</span>';
+          }
+          
+          // Hide quick info, expand setup guide
+          if (connectionInfo) {
+            connectionInfo.style.display = 'none';
+          }
+          if (setupGuide) {
+            setupGuide.classList.add('expanded');
+          }
+        }
+      };
+      
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          ws.close();
+          if (bridgeStatus) {
+            bridgeStatus.className = 'status-check error';
+            bridgeStatus.innerHTML = '<span class="status-icon">✗</span><span>OSC Bridge not detected.</span>';
+          }
+          if (setupGuide) {
+            setupGuide.classList.add('expanded');
+          }
+        }
+      }, 2000);
+    }
+    
+    // Run bridge check on load
+    checkBridge();
+    
+    // Re-check periodically
+    setInterval(checkBridge, 10000);
+    
+    // Also detect local IP for the setup guide
+    detectLocalIP((ip) => {
+      const ipText = ip || '(run: ipconfig getifaddr en0)';
+      const localIP2 = document.getElementById('localIP2');
+      if (localIP2) localIP2.textContent = ipText;
+    });
+    
+    // Click-to-copy for code blocks
+    document.querySelectorAll('.code-block').forEach(block => {
+      block.title = 'Click to copy';
+      block.addEventListener('click', () => {
+        navigator.clipboard.writeText(block.textContent.trim()).then(() => {
+          const originalText = block.textContent;
+          block.textContent = '✓ Copied!';
+          block.style.background = 'rgba(34, 197, 94, 0.2)';
+          block.style.color = '#22c55e';
+          setTimeout(() => {
+            block.textContent = originalText;
+            block.style.background = '';
+            block.style.color = '';
+          }, 1500);
+        });
+      });
+    });
+    
+    // Check for muse data timeout
+    setInterval(() => {
+      if (muse.connected && !muse.isReceivingData()) {
+        document.getElementById('museStatusBar').textContent = 'Muse: No data';
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

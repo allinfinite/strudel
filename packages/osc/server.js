@@ -24,7 +24,7 @@ let debug = Number(getArgValue('--debug')) || 0;
 const config = {
   receiver: 'ws', // @param {string} Where messages sent via 'send' method will be delivered to, 'ws' for Websocket clients, 'udp' for udp client
   udpServer: {
-    host: 'localhost', // @param {string} Hostname of udp server to bind to
+    host: '0.0.0.0', // @param {string} Hostname of udp server to bind to (0.0.0.0 = all interfaces)
     port: 57121, // @param {number} Port of udp client for messaging
     // enabling the following line will receive tidal messages:
     // port: 57120, // @param {number} Port of udp client for messaging
@@ -42,16 +42,25 @@ const config = {
 
 const osc = new OSC({ plugin: new OSC.BridgePlugin(config) });
 
-if (debug) {
-  osc.on('*', (message) => {
-    const { address, args } = message;
+// Forward all incoming UDP messages to WebSocket clients
+osc.on('*', (message) => {
+  const { address, args } = message;
+  
+  if (debug) {
     let str = '';
     for (let i = 0; i < args.length; i += 2) {
       str += `${args[i]}: ${args[i + 1]} `;
     }
     console.log(`${address} ${str}`);
-  });
-}
+  }
+  
+  // Re-send to WebSocket clients
+  try {
+    osc.send(new OSC.Message(address, ...args));
+  } catch (e) {
+    // Ignore send errors (no clients connected)
+  }
+});
 
 osc.on('error', (message) => {
   if (message.toString().includes('EADDRINUSE')) {
