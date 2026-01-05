@@ -35,7 +35,7 @@ const config = {
     port: udpClientPort, // @param {number} Port of udp client for messaging
   },
   wsServer: {
-    host: 'localhost', // @param {string} Hostname of WebSocket server
+    host: '0.0.0.0', // @param {string} Hostname of WebSocket server (0.0.0.0 = all interfaces)
     port: 8080, // @param {number} Port of WebSocket server
   },
 };

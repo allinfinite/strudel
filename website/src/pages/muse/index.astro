@@ -1201,6 +1201,121 @@
     .status-icon {
       font-size: 1rem;
     }
+
+    .status-check.warning {
+      color: #f59e0b;
+    }
+
+    .status-check.warning .status-icon {
+      color: #f59e0b;
+    }
+
+    /* HTTPS Warning */
+    .https-warning {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.1));
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 20px;
+    }
+
+    .warning-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .warning-icon {
+      font-size: 1.5rem;
+    }
+
+    .warning-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f59e0b;
+    }
+
+    .https-warning > p {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .warning-options {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .warning-options {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .warning-option {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      position: relative;
+    }
+
+    .warning-option.recommended {
+      border-color: rgba(34, 197, 94, 0.4);
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), var(--bg-dark));
+    }
+
+    .option-badge {
+      position: absolute;
+      top: -8px;
+      right: 12px;
+      background: #22c55e;
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .warning-option h4 {
+      margin: 0 0 0.5rem 0;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .warning-option p {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin: 0.3rem 0;
+    }
+
+    .warning-option ol {
+      margin: 0.5rem 0;
+      padding-left: 1.25rem;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    .warning-option li {
+      margin: 0.3rem 0;
+    }
+
+    .warning-option code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      background: var(--bg-deep);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .warning-option .code-block {
+      font-size: 0.8rem;
+      padding: 0.5rem 0.75rem;
+      margin: 0.4rem 0;
+    }
     
     /* Mode-specific panels */
     .mode-panel {
@@ -1291,6 +1406,34 @@
       </button>
     </div>
     
+    <!-- HTTPS Warning -->
+    <div class="https-warning" id="httpsWarning" style="display: none;">
+      <div class="warning-header">
+        <span class="warning-icon">🔒</span>
+        <span class="warning-title">HTTPS Security Restriction</span>
+      </div>
+      <p>This site is served over HTTPS, which blocks connections to local services (ws://localhost). You have two options:</p>
+      <div class="warning-options">
+        <div class="warning-option recommended">
+          <span class="option-badge">Recommended</span>
+          <h4>Option A: Run Locally</h4>
+          <p>Clone and run the app on your computer:</p>
+          <code class="code-block">git clone https://github.com/allinfinite/strudel.git</code>
+          <code class="code-block">cd strudel && pnpm install && pnpm run dev</code>
+          <p class="step-note">Then visit http://localhost:4321/muse/</p>
+        </div>
+        <div class="warning-option">
+          <h4>Option B: Chrome Flag (Advanced)</h4>
+          <p>Allow insecure localhost in Chrome:</p>
+          <ol>
+            <li>Go to <code>chrome://flags/#allow-insecure-localhost</code></li>
+            <li>Enable "Allow invalid certificates for resources loaded from localhost"</li>
+            <li>Restart Chrome and return here</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
     <!-- Setup Guide -->
     <div class="setup-guide" id="setupGuide">
       <button class="setup-toggle" id="setupToggle">
@@ -3550,8 +3693,28 @@
       }
     }
     
+    // Check if we're on HTTPS (mixed content issue)
+    const isSecureContext = window.location.protocol === 'https:';
+    const httpsWarning = document.getElementById('httpsWarning');
+    
+    if (isSecureContext && httpsWarning) {
+      httpsWarning.style.display = 'block';
+    }
+    
     // Check if OSC bridge is running
     function checkBridge() {
+      // Skip check if on HTTPS - ws:// won't work
+      if (isSecureContext) {
+        if (bridgeStatus) {
+          bridgeStatus.className = 'status-check warning';
+          bridgeStatus.innerHTML = '<span class="status-icon">⚠️</span><span>HTTPS blocks local WebSocket. See instructions above.</span>';
+        }
+        if (setupGuide) {
+          setupGuide.classList.add('expanded');
+        }
+        return;
+      }
+      
       const ws = new WebSocket('ws://localhost:8080');
       let resolved = false;
       
