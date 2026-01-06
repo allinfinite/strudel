@@ -124,6 +124,162 @@
       flex-wrap: wrap;
     }
     
+    /* Muse connection group */
+    .muse-connection-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .connection-mode-select {
+      font-family: 'JetBrains Mono', monospace;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .connection-mode-select:hover {
+      border-color: var(--accent);
+    }
+    
+    .connection-mode-select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .connection-mode-select option {
+      background: var(--bg-card);
+      color: var(--text);
+    }
+    
+    /* Bluetooth warning tooltip */
+    .bluetooth-warning {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--warning);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 15px;
+      color: var(--warning);
+      font-size: 0.85rem;
+    }
+    
+    .bluetooth-warning.visible {
+      display: block;
+    }
+    
+    .bluetooth-warning a {
+      color: var(--accent);
+    }
+    
+    /* Bluetooth tips */
+    .bluetooth-tips {
+      background: var(--bg-card);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 15px;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+    
+    .bluetooth-tips strong {
+      color: var(--accent);
+    }
+    
+    .bluetooth-tips ul {
+      margin: 8px 0 0 0;
+      padding-left: 20px;
+    }
+    
+    .bluetooth-tips li {
+      margin: 4px 0;
+    }
+    
+    .bluetooth-tips li strong {
+      color: var(--text);
+    }
+    
+    /* Contact Quality Indicator */
+    .contact-quality-section {
+      background: var(--bg-dark);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+    }
+    
+    .contact-quality-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .contact-label {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    .contact-status {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: var(--warning);
+      color: black;
+    }
+    
+    .contact-status.good {
+      background: var(--accent);
+    }
+    
+    .contact-status.poor {
+      background: var(--danger);
+      color: white;
+    }
+    
+    .contact-electrodes {
+      display: flex;
+      justify-content: space-around;
+      gap: 10px;
+    }
+    
+    .electrode {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .electrode span {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      display: block;
+      margin-top: 4px;
+    }
+    
+    .electrode-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin: 0 auto;
+      background: var(--danger);
+      transition: background 0.3s;
+    }
+    
+    .electrode-indicator.good {
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    
+    .electrode-indicator.medium {
+      background: var(--warning);
+    }
+    
     .btn {
       font-family: 'JetBrains Mono', monospace;
       padding: 12px 24px;
@@ -1429,12 +1585,36 @@
       <button id="stopBtn" class="btn danger">
         <span>◼</span> STOP
       </button>
-      <button id="museBtn" class="btn">
-        <span>🧠</span> CONNECT MUSE
-      </button>
+      <div class="muse-connection-group">
+        <select id="museConnectionMode" class="connection-mode-select">
+          <option value="bluetooth">Direct Bluetooth</option>
+          <option value="osc">Mind Monitor (OSC)</option>
+        </select>
+        <button id="museBtn" class="btn">
+          <span>🧠</span> CONNECT MUSE
+        </button>
+      </div>
       <button id="addToneBtn" class="btn">
         <span>+</span> ADD TONE
       </button>
+    </div>
+    
+    <!-- Bluetooth Compatibility Warning -->
+    <div id="bluetoothWarning" class="bluetooth-warning">
+      <strong>⚠️ Web Bluetooth Not Available</strong><br>
+      Direct Bluetooth connection requires Chrome, Edge, or Opera browser. 
+      <a href="#mind-monitor-setup">Use Mind Monitor (OSC) instead</a> or switch to a supported browser.
+    </div>
+    
+    <!-- Bluetooth Tips -->
+    <div id="bluetoothTips" class="bluetooth-tips" style="display: none;">
+      <strong>📡 BLE Scanning Tips:</strong>
+      <ul>
+        <li>Make sure your Muse is <strong>powered on</strong> (hold button until LED blinks)</li>
+        <li>Muse won't appear in system Bluetooth - it uses BLE (like LightBlue/nRF Connect)</li>
+        <li>If it doesn't appear, try <strong>restarting the Muse</strong> or moving closer</li>
+        <li>Only one device can connect at a time - disconnect from other apps first</li>
+      </ul>
     </div>
     
     <!-- HTTPS Warning -->
@@ -1718,6 +1898,33 @@
             <span class="card-title">🧠 BRAINWAVES</span>
             <button id="museDisconnect" class="btn btn-small">Disconnect</button>
           </div>
+          
+          <!-- Contact Quality Indicator (Bluetooth only) -->
+          <div id="contactQualitySection" class="contact-quality-section" style="display: none;">
+            <div class="contact-quality-header">
+              <span class="contact-label">ELECTRODE CONTACT</span>
+              <span id="contactStatus" class="contact-status">Put headband on</span>
+            </div>
+            <div class="contact-electrodes">
+              <div class="electrode" id="electrode0">
+                <div class="electrode-indicator"></div>
+                <span>TP9</span>
+              </div>
+              <div class="electrode" id="electrode1">
+                <div class="electrode-indicator"></div>
+                <span>AF7</span>
+              </div>
+              <div class="electrode" id="electrode2">
+                <div class="electrode-indicator"></div>
+                <span>AF8</span>
+              </div>
+              <div class="electrode" id="electrode3">
+                <div class="electrode-indicator"></div>
+                <span>TP10</span>
+              </div>
+            </div>
+          </div>
+          
           <div class="brainwave-bars">
             <div class="wave-bar delta">
               <div class="wave-bar-container">
@@ -1918,19 +2125,108 @@
     </div>
   </div>
 
+  <!-- muse-js library for direct Bluetooth connection -->
+  <script type="module">
+    // Load muse-js from esm.sh (best ESM CDN with dependency resolution)
+    try {
+      const { MuseClient } = await import('https://esm.sh/muse-js@3.3.0');
+      window.MuseClient = MuseClient;
+      console.log('[Muse] muse-js library loaded successfully');
+    } catch (e) {
+      console.error('[Muse] Failed to load muse-js library:', e);
+      window.MuseClientError = e.message;
+    }
+  </script>
+  
   <script>
     // ============================================
-    // MUSE OSC HANDLER
+    // MUSE HANDLER (supports Bluetooth + OSC)
     // ============================================
     
-    class MuseOSCHandler {
+    // FFT size for Bluetooth EEG processing
+    const FFT_SIZE = 256;
+    const SAMPLE_RATE = 256;
+    
+    // Simple FFT for band power extraction
+    class FFTProcessor {
+      constructor(size) {
+        this.size = size;
+        this.real = new Float32Array(size);
+        this.imag = new Float32Array(size);
+        this.cosTable = new Float32Array(size / 2);
+        this.sinTable = new Float32Array(size / 2);
+        for (let i = 0; i < size / 2; i++) {
+          this.cosTable[i] = Math.cos(2 * Math.PI * i / size);
+          this.sinTable[i] = Math.sin(2 * Math.PI * i / size);
+        }
+        this.window = new Float32Array(size);
+        for (let i = 0; i < size; i++) {
+          this.window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (size - 1)));
+        }
+      }
+      
+      compute(samples) {
+        const n = this.size;
+        for (let i = 0; i < n; i++) {
+          this.real[i] = (samples[i] || 0) * this.window[i];
+          this.imag[i] = 0;
+        }
+        let j = 0;
+        for (let i = 0; i < n - 1; i++) {
+          if (i < j) {
+            [this.real[i], this.real[j]] = [this.real[j], this.real[i]];
+            [this.imag[i], this.imag[j]] = [this.imag[j], this.imag[i]];
+          }
+          let k = n >> 1;
+          while (k <= j) { j -= k; k >>= 1; }
+          j += k;
+        }
+        for (let size = 2; size <= n; size *= 2) {
+          const halfSize = size / 2;
+          const step = n / size;
+          for (let i = 0; i < n; i += size) {
+            for (let j = 0, k = 0; j < halfSize; j++, k += step) {
+              const tReal = this.real[i + j + halfSize] * this.cosTable[k] + this.imag[i + j + halfSize] * this.sinTable[k];
+              const tImag = this.imag[i + j + halfSize] * this.cosTable[k] - this.real[i + j + halfSize] * this.sinTable[k];
+              this.real[i + j + halfSize] = this.real[i + j] - tReal;
+              this.imag[i + j + halfSize] = this.imag[i + j] - tImag;
+              this.real[i + j] += tReal;
+              this.imag[i + j] += tImag;
+            }
+          }
+        }
+        const magnitudes = new Float32Array(n / 2);
+        for (let i = 0; i < n / 2; i++) {
+          magnitudes[i] = Math.sqrt(this.real[i] * this.real[i] + this.imag[i] * this.imag[i]);
+        }
+        return magnitudes;
+      }
+      
+      getBandPower(magnitudes, lowFreq, highFreq) {
+        const freqResolution = SAMPLE_RATE / this.size;
+        // Start at bin 1 minimum to exclude DC component (bin 0)
+        const lowBin = Math.max(1, Math.floor(lowFreq / freqResolution));
+        const highBin = Math.ceil(highFreq / freqResolution);
+        let sum = 0, count = 0;
+        for (let i = lowBin; i <= highBin && i < magnitudes.length; i++) {
+          sum += magnitudes[i] * magnitudes[i];
+          count++;
+        }
+        return count > 0 ? sum / count : 0;
+      }
+    }
+    
+    class MuseHandler {
       constructor() {
         this.ws = null;
         this.connected = false;
+        this.connectionMode = null; // 'bluetooth' | 'osc'
+        this.deviceName = null;
         this.lastDataTime = 0;
+        
         // Normalized values (0-1) for visualization
         this.delta = 0; this.theta = 0; this.alpha = 0; this.beta = 0; this.gamma = 0;
-        // dB values for display (converted from log power)
+        // dB values for display
         this.deltaDb = 0; this.thetaDb = 0; this.alphaDb = 0; this.betaDb = 0; this.gammaDb = 0;
         this.smoothing = 0.3;
         this.decayRate = 0.95;
@@ -1938,8 +2234,8 @@
         this.onConnect = null;
         this.onDisconnect = null;
         this.decayInterval = null;
-        // dB reference offset (Mind Monitor typically shows values around 70-100 dB)
         this.dbOffset = 90;
+        
         // Auto-scaling for visualization
         this.ranges = {
           delta: { min: Infinity, max: -Infinity },
@@ -1948,35 +2244,272 @@
           beta: { min: Infinity, max: -Infinity },
           gamma: { min: Infinity, max: -Infinity }
         };
+        
+        // Bluetooth specific
+        this.museClient = null;
+        this.eegSubscription = null;
+        this.fft = new FFTProcessor(FFT_SIZE);
+        this.eegBuffers = [[], [], [], []];
+        
+        // Contact quality detection
+        this.contactQuality = [0, 0, 0, 0]; // 0-1 for each electrode
+        this.signalVariance = [0, 0, 0, 0];
+        this.onContactQuality = null;
       }
       
-      connect(url = 'ws://localhost:8080') {
+      static isBluetoothAvailable() {
+        return typeof navigator !== 'undefined' && navigator.bluetooth !== undefined;
+      }
+      
+      static isSecureContext() {
+        return window.isSecureContext === true;
+      }
+      
+      static getBluetoothBlockedReason() {
+        if (!window.isSecureContext) {
+          return 'not-secure'; // HTTP instead of HTTPS
+        }
+        if (!navigator.bluetooth) {
+          return 'not-supported'; // Browser doesn't support Web Bluetooth
+        }
+        return 'unknown';
+      }
+      
+      // ========== BLUETOOTH CONNECTION ==========
+      
+      async connectBluetooth() {
+        if (!MuseHandler.isBluetoothAvailable()) {
+          throw new Error('Web Bluetooth not available. Use Chrome, Edge, or Opera.');
+        }
+        if (this.connected) return;
+        
+        try {
+          // Wait for muse-js to load
+          let retries = 0;
+          while (!window.MuseClient && !window.MuseClientError && retries < 30) {
+            await new Promise(r => setTimeout(r, 100));
+            retries++;
+          }
+          if (window.MuseClientError) {
+            throw new Error('Failed to load Muse library: ' + window.MuseClientError);
+          }
+          if (!window.MuseClient) {
+            throw new Error('Muse library not loaded. Check your internet connection and try refreshing.');
+          }
+          
+          console.log('[Muse] Scanning for BLE devices...');
+          console.log('[Muse] Note: Muse uses BLE - it won\'t appear in system Bluetooth settings');
+          console.log('[Muse] Make sure Muse is ON (LED blinking) and not connected to other apps');
+          
+          this.museClient = new window.MuseClient();
+          // muse-js uses Web Bluetooth with namePrefix: 'Muse' filter
+          await this.museClient.connect();
+          
+          this.deviceName = this.museClient.deviceName || 'Muse';
+          console.log(`[Muse] Connected to ${this.deviceName} via Bluetooth`);
+          
+          await this.museClient.start();
+          
+          // Subscribe to EEG
+          this.eegSubscription = this.museClient.eegReadings.subscribe(reading => {
+            this.handleBluetoothEEG(reading);
+          });
+          
+          // Subscribe to electrode status (contact quality)
+          if (this.museClient.telemetryData) {
+            this.museClient.telemetryData.subscribe(telemetry => {
+              // telemetry contains battery, temperature info
+              console.log('[Muse] Telemetry:', telemetry);
+            });
+          }
+          
+          this.connected = true;
+          this.connectionMode = 'bluetooth';
+          this.startDecayCheck();
+          this.onConnect?.();
+          
+          // Handle disconnection
+          this.museClient.connectionStatus.subscribe(status => {
+            if (!status) this.handleBluetoothDisconnect();
+          });
+          
+        } catch (error) {
+          console.error('[Muse] Bluetooth connection failed:', error);
+          this.museClient = null;
+          throw error;
+        }
+      }
+      
+      handleBluetoothEEG(reading) {
+        this.lastDataTime = Date.now();
+        const channel = reading.electrode;
+        if (channel < 0 || channel > 3) return;
+        
+        for (const sample of reading.samples) {
+          this.eegBuffers[channel].push(sample);
+        }
+        while (this.eegBuffers[channel].length > FFT_SIZE) {
+          this.eegBuffers[channel].shift();
+        }
+        
+        // Calculate signal variance for contact quality
+        if (this.eegBuffers[channel].length >= 64) {
+          const recent = this.eegBuffers[channel].slice(-64);
+          const mean = recent.reduce((a, b) => a + b, 0) / recent.length;
+          const variance = recent.reduce((a, b) => a + (b - mean) ** 2, 0) / recent.length;
+          this.signalVariance[channel] = variance;
+          
+          // Good contact: variance between 100-10000 µV²
+          // No contact/noise: variance > 50000 µV² (very noisy)
+          // Very low variance could also be bad (flat line)
+          if (variance > 50000) {
+            this.contactQuality[channel] = 0; // No contact - too noisy
+          } else if (variance < 10) {
+            this.contactQuality[channel] = 0; // No signal - flat line
+          } else {
+            this.contactQuality[channel] = Math.min(1, Math.max(0, 1 - (variance - 1000) / 50000));
+          }
+        }
+        
+        if (channel === 0 && this.eegBuffers[0].length >= FFT_SIZE) {
+          this.processBluetoothFFT();
+          
+          // Report contact quality
+          const avgQuality = this.contactQuality.reduce((a, b) => a + b, 0) / 4;
+          this.onContactQuality?.(this.contactQuality, avgQuality);
+        }
+      }
+      
+      // Simple high-pass filter to remove DC drift (single-pole IIR)
+      highPassFilter(samples, cutoff = 1.0) {
+        const rc = 1.0 / (2 * Math.PI * cutoff);
+        const dt = 1.0 / SAMPLE_RATE;
+        const alpha = rc / (rc + dt);
+        
+        const filtered = new Array(samples.length);
+        filtered[0] = 0;
+        for (let i = 1; i < samples.length; i++) {
+          filtered[i] = alpha * (filtered[i-1] + samples[i] - samples[i-1]);
+        }
+        return filtered;
+      }
+      
+      processBluetoothFFT() {
+        const bandPowers = { delta: 0, theta: 0, alpha: 0, beta: 0, gamma: 0 };
+        let validChannels = 0;
+        
+        for (let ch = 0; ch < 4; ch++) {
+          if (this.eegBuffers[ch].length < FFT_SIZE) continue;
+          
+          // Apply high-pass filter to remove DC drift
+          const filtered = this.highPassFilter(this.eegBuffers[ch], 1.0);
+          const magnitudes = this.fft.compute(filtered);
+          
+          // Delta starts at 1 Hz (not 0.5) due to FFT resolution
+          bandPowers.delta += this.fft.getBandPower(magnitudes, 1, 4);
+          bandPowers.theta += this.fft.getBandPower(magnitudes, 4, 8);
+          bandPowers.alpha += this.fft.getBandPower(magnitudes, 8, 13);
+          bandPowers.beta += this.fft.getBandPower(magnitudes, 13, 30);
+          bandPowers.gamma += this.fft.getBandPower(magnitudes, 30, 44);
+          validChannels++;
+        }
+        
+        if (validChannels === 0) return;
+        
+        for (const band in bandPowers) bandPowers[band] /= validChannels;
+        
+        // Apply simple correction: boost higher frequencies which are naturally weaker
+        // This helps balance the display (raw EEG power drops off at ~1/f)
+        bandPowers.theta *= 1.5;
+        bandPowers.alpha *= 2.0;
+        bandPowers.beta *= 3.0;
+        bandPowers.gamma *= 4.0;
+        
+        const totalPower = bandPowers.delta + bandPowers.theta + bandPowers.alpha + bandPowers.beta + bandPowers.gamma;
+        
+        if (totalPower > 0) {
+          const s = this.smoothing;
+          for (const band of ['delta', 'theta', 'alpha', 'beta', 'gamma']) {
+            const normalized = bandPowers[band] / totalPower;
+            this[band] = this[band] * s + normalized * (1 - s);
+            // For Bluetooth: show relative percentage instead of uncalibrated dB
+            // Store as percentage (0-100) in the Db field for display
+            this[band + 'Db'] = this[band] * 100;
+          }
+          
+          this.onData?.({
+            delta: this.delta, theta: this.theta, alpha: this.alpha, beta: this.beta, gamma: this.gamma,
+            deltaDb: this.deltaDb, thetaDb: this.thetaDb, alphaDb: this.alphaDb, betaDb: this.betaDb, gammaDb: this.gammaDb,
+            isRelative: true // Flag to indicate these are percentages, not dB
+          });
+        }
+      }
+      
+      handleBluetoothDisconnect() {
+        console.log('[Muse] Bluetooth disconnected');
+        if (this.eegSubscription) {
+          this.eegSubscription.unsubscribe();
+          this.eegSubscription = null;
+        }
+        this.museClient = null;
+        this.connected = false;
+        this.connectionMode = null;
+        this.deviceName = null;
+        this.eegBuffers = [[], [], [], []];
+        this.stopDecayCheck();
+        this.resetValues();
+        this.onDisconnect?.();
+      }
+      
+      // ========== OSC CONNECTION ==========
+      
+      connectOSC(url = 'ws://localhost:8080') {
         if (this.ws) return;
         this.ws = new WebSocket(url);
         this.ws.binaryType = 'arraybuffer';
         
         this.ws.onopen = () => {
           this.connected = true;
+          this.connectionMode = 'osc';
           this.startDecayCheck();
           this.onConnect?.();
         };
         
         this.ws.onclose = () => {
           this.connected = false;
+          this.connectionMode = null;
           this.ws = null;
           this.stopDecayCheck();
           this.resetValues();
           this.onDisconnect?.();
         };
         
-        this.ws.onerror = (err) => console.error('[Muse] Error:', err);
+        this.ws.onerror = (err) => console.error('[Muse] OSC Error:', err);
         this.ws.onmessage = (e) => this.parseOSC(e.data);
       }
       
+      // Legacy alias
+      connect(url) { this.connectOSC(url); }
+      
       disconnect() {
+        // Bluetooth disconnect
+        if (this.museClient) {
+          if (this.eegSubscription) {
+            this.eegSubscription.unsubscribe();
+            this.eegSubscription = null;
+          }
+          try { this.museClient.disconnect(); } catch(e) {}
+          this.museClient = null;
+        }
+        
+        // OSC disconnect
         if (this.ws) this.ws.close();
         this.ws = null;
+        
         this.connected = false;
+        this.connectionMode = null;
+        this.deviceName = null;
+        this.eegBuffers = [[], [], [], []];
         this.stopDecayCheck();
         this.resetValues();
       }
@@ -2000,7 +2533,6 @@
       startDecayCheck() {
         this.stopDecayCheck();
         this.decayInterval = setInterval(() => {
-          // If no data received in 500ms, decay values toward 0
           if (Date.now() - this.lastDataTime > 500) {
             this.delta *= this.decayRate;
             this.theta *= this.decayRate;
@@ -2008,7 +2540,6 @@
             this.beta *= this.decayRate;
             this.gamma *= this.decayRate;
             
-            // Snap to 0 if very small
             if (this.delta < 0.01) this.delta = 0;
             if (this.theta < 0.01) this.theta = 0;
             if (this.alpha < 0.01) this.alpha = 0;
@@ -2056,21 +2587,19 @@
             else if (type === 'i') { args.push(view.getInt32(offset, false)); offset += 4; }
           }
           
-          this.handleMessage(address, args);
+          this.handleOSCMessage(address, args);
         } catch (err) {}
       }
       
-      handleMessage(address, args) {
+      handleOSCMessage(address, args) {
         this.lastDataTime = Date.now();
         
-        // Filter out NaN and undefined values
         const validArgs = args.filter(v => typeof v === 'number' && !isNaN(v));
         if (validArgs.length === 0) return;
         
         const avg = validArgs.reduce((a, b) => a + b, 0) / validArgs.length;
         const s = this.smoothing;
         
-        // Determine which band this is
         let band = null;
         if (address.includes('delta')) band = 'delta';
         else if (address.includes('theta')) band = 'theta';
@@ -2080,20 +2609,16 @@
         
         if (!band) return;
         
-        // Convert log power to dB: multiply by 10 and add offset
-        // Raw values are in Bels (log10 of power), dB = 10 * Bels
         const dbValue = (avg * 10) + this.dbOffset;
         const dbKey = band + 'Db';
         this[dbKey] = this[dbKey] * s + dbValue * (1 - s);
         
-        // Auto-scale for visualization
         const range = this.ranges[band];
         if (avg < range.min) range.min = avg;
         if (avg > range.max) range.max = avg;
         range.min = range.min * 0.9999 + avg * 0.0001;
         range.max = range.max * 0.9999 + avg * 0.0001;
         
-        // Normalize to 0-1 based on observed range
         const rangeSize = Math.max(0.1, range.max - range.min);
         let normalized = (avg - range.min) / rangeSize;
         normalized = Math.max(0, Math.min(1, normalized));
@@ -2102,12 +2627,16 @@
         
         this.onData?.({
           delta: this.delta, theta: this.theta, alpha: this.alpha, beta: this.beta, gamma: this.gamma,
-          deltaDb: this.deltaDb, thetaDb: this.thetaDb, alphaDb: this.alphaDb, betaDb: this.betaDb, gammaDb: this.gammaDb
+          deltaDb: this.deltaDb, thetaDb: this.thetaDb, alphaDb: this.alphaDb, betaDb: this.betaDb, gammaDb: this.gammaDb,
+          isRelative: false // OSC provides calibrated dB values
         });
       }
       
       isReceivingData() { return Date.now() - this.lastDataTime < 1000; }
     }
+    
+    // Alias for backward compatibility
+    const MuseOSCHandler = MuseHandler;
     
     // ============================================
     // BRAINWAVE THERAPY ENGINE
@@ -2945,8 +3474,63 @@
     // ============================================
     
     const engine = new TherapyEngine();
-    const muse = new MuseOSCHandler();
+    const muse = new MuseHandler();
     let currentPreset = null;
+    
+    // ========== BLUETOOTH AVAILABILITY CHECK ==========
+    const bluetoothAvailable = MuseHandler.isBluetoothAvailable();
+    const isSecure = MuseHandler.isSecureContext();
+    const connectionModeSelect = document.getElementById('museConnectionMode');
+    const bluetoothWarning = document.getElementById('bluetoothWarning');
+    
+    // Check Bluetooth availability and update UI
+    if (!bluetoothAvailable || !isSecure) {
+      // Disable Bluetooth option
+      const btOption = connectionModeSelect.querySelector('option[value="bluetooth"]');
+      if (btOption) {
+        btOption.disabled = true;
+        if (!isSecure) {
+          btOption.textContent = 'Direct Bluetooth (requires HTTPS)';
+          bluetoothWarning.innerHTML = `
+            <strong>⚠️ HTTPS Required for Bluetooth</strong><br>
+            Web Bluetooth requires a secure connection. You're currently on HTTP.<br><br>
+            <strong>Options:</strong><br>
+            • Use <code>localhost</code> (e.g., <a href="http://localhost:4321/muse/">http://localhost:4321/muse/</a>)<br>
+            • Deploy to HTTPS<br>
+            • Use Mind Monitor (OSC) instead - works on HTTP
+          `;
+          bluetoothWarning.classList.add('visible');
+        } else {
+          btOption.textContent = 'Direct Bluetooth (not available)';
+        }
+      }
+      // Select OSC by default
+      connectionModeSelect.value = 'osc';
+    }
+    
+    console.log('[Muse] Secure context:', isSecure, '| Bluetooth API:', bluetoothAvailable ? 'available' : 'not available');
+    
+    // Show warning/tips when connection mode changes
+    const bluetoothTips = document.getElementById('bluetoothTips');
+    
+    function updateConnectionModeUI() {
+      const mode = connectionModeSelect.value;
+      if (mode === 'bluetooth' && !bluetoothAvailable) {
+        bluetoothWarning.classList.add('visible');
+        bluetoothTips.style.display = 'none';
+        connectionModeSelect.value = 'osc';
+      } else if (mode === 'bluetooth') {
+        bluetoothWarning.classList.remove('visible');
+        bluetoothTips.style.display = 'block';
+      } else {
+        bluetoothWarning.classList.remove('visible');
+        bluetoothTips.style.display = 'none';
+      }
+    }
+    
+    connectionModeSelect.addEventListener('change', updateConnectionModeUI);
+    // Initial check
+    updateConnectionModeUI();
     
     // Start/Stop
     document.getElementById('startBtn').addEventListener('click', async () => {
@@ -2972,25 +3556,116 @@
     });
     
     // Muse connection
-    document.getElementById('museBtn').addEventListener('click', () => {
-      if (muse.connected) muse.disconnect();
-      else muse.connect();
+    document.getElementById('museBtn').addEventListener('click', async () => {
+      if (muse.connected) {
+        muse.disconnect();
+      } else {
+        const mode = connectionModeSelect.value;
+        const btn = document.getElementById('museBtn');
+        
+        if (mode === 'bluetooth') {
+          btn.innerHTML = '<span>🧠</span> SCANNING BLE...';
+        } else {
+          btn.innerHTML = '<span>🧠</span> CONNECTING...';
+        }
+        btn.disabled = true;
+        connectionModeSelect.disabled = true;
+        
+        try {
+          if (mode === 'bluetooth') {
+            await muse.connectBluetooth();
+          } else {
+            muse.connectOSC();
+          }
+        } catch (error) {
+          console.error('[Muse] Connection failed:', error);
+          btn.innerHTML = '<span>🧠</span> CONNECT MUSE';
+          btn.disabled = false;
+          connectionModeSelect.disabled = false;
+          
+          if (mode === 'bluetooth') {
+            // Check for specific error types
+            const msg = error.message || '';
+            if (msg.includes('cancelled') || msg.includes('canceled')) {
+              // User cancelled - no alert needed
+              console.log('[Muse] User cancelled device selection');
+            } else if (msg.includes('globally disabled') || msg.includes('permission has been blocked')) {
+              alert('Web Bluetooth is blocked!\n\nPossible causes:\n• Not on HTTPS (use localhost or deploy to HTTPS)\n• Bluetooth permission denied in browser settings\n• Chrome flag disabled\n\nTo enable in Chrome:\n1. Go to chrome://flags\n2. Search for "Web Bluetooth"\n3. Enable it and restart Chrome\n\nOr use Mind Monitor (OSC) mode instead.');
+            } else if (msg.includes('not found') || msg.includes('No device')) {
+              alert('No Muse device found.\n\n• Make sure Muse is powered ON (hold button until LED blinks)\n• Move closer to the device\n• Try restarting the Muse headband\n• Disconnect from other apps (Mind Monitor, Muse app)');
+            } else {
+              alert('Bluetooth connection failed: ' + msg + '\n\nTips:\n• Power cycle your Muse headband\n• Make sure no other app is connected\n• Try refreshing the page');
+            }
+          }
+        }
+      }
     });
     
     document.getElementById('museDisconnect').addEventListener('click', () => muse.disconnect());
     
     muse.onConnect = () => {
-      document.getElementById('museBtn').classList.add('active');
-      document.getElementById('museBtn').innerHTML = '<span>🧠</span> CONNECTED';
+      const btn = document.getElementById('museBtn');
+      btn.classList.add('active');
+      btn.disabled = false;
+      connectionModeSelect.disabled = true; // Keep disabled while connected
+      
+      const modeLabel = muse.connectionMode === 'bluetooth' ? 'BT' : 'OSC';
+      const deviceLabel = muse.deviceName ? ` (${muse.deviceName})` : '';
+      btn.innerHTML = `<span>🧠</span> CONNECTED [${modeLabel}]`;
+      
       document.getElementById('museSection').style.display = 'block';
       document.getElementById('museStatusDot').classList.add('active');
-      document.getElementById('museStatusBar').textContent = 'Muse: Connected';
+      document.getElementById('museStatusBar').textContent = `Muse: ${modeLabel}${deviceLabel}`;
+      
+      // Show contact quality section only for Bluetooth
+      const contactSection = document.getElementById('contactQualitySection');
+      if (muse.connectionMode === 'bluetooth') {
+        contactSection.style.display = 'block';
+      } else {
+        contactSection.style.display = 'none';
+      }
+      
       startWaveAnimation();
     };
     
+    // Contact quality callback (Bluetooth only)
+    muse.onContactQuality = (qualities, avgQuality) => {
+      const electrodeNames = ['electrode0', 'electrode1', 'electrode2', 'electrode3'];
+      
+      electrodeNames.forEach((id, i) => {
+        const el = document.getElementById(id);
+        const indicator = el?.querySelector('.electrode-indicator');
+        if (!indicator) return;
+        
+        indicator.classList.remove('good', 'medium');
+        if (qualities[i] > 0.6) {
+          indicator.classList.add('good');
+        } else if (qualities[i] > 0.3) {
+          indicator.classList.add('medium');
+        }
+      });
+      
+      const statusEl = document.getElementById('contactStatus');
+      statusEl.classList.remove('good', 'poor');
+      
+      if (avgQuality > 0.6) {
+        statusEl.textContent = 'Good contact';
+        statusEl.classList.add('good');
+      } else if (avgQuality > 0.3) {
+        statusEl.textContent = 'Adjust headband';
+      } else {
+        statusEl.textContent = 'No contact - put on headband';
+        statusEl.classList.add('poor');
+      }
+    };
+    
     muse.onDisconnect = () => {
-      document.getElementById('museBtn').classList.remove('active');
-      document.getElementById('museBtn').innerHTML = '<span>🧠</span> CONNECT MUSE';
+      const btn = document.getElementById('museBtn');
+      btn.classList.remove('active');
+      btn.innerHTML = '<span>🧠</span> CONNECT MUSE';
+      btn.disabled = false;
+      connectionModeSelect.disabled = false;
+      
       document.getElementById('museSection').style.display = 'none';
       document.getElementById('museStatusDot').classList.remove('active');
       document.getElementById('museStatusBar').textContent = 'Muse: Disconnected';
@@ -3112,12 +3787,14 @@
     muse.onData = (data) => {
       brainwaveData = data;
       
-      // Update value displays - show actual dB values
-      document.getElementById('deltaVal').textContent = data.deltaDb ? data.deltaDb.toFixed(1) + ' dB' : '-- dB';
-      document.getElementById('thetaVal').textContent = data.thetaDb ? data.thetaDb.toFixed(1) + ' dB' : '-- dB';
-      document.getElementById('alphaVal').textContent = data.alphaDb ? data.alphaDb.toFixed(1) + ' dB' : '-- dB';
-      document.getElementById('betaVal').textContent = data.betaDb ? data.betaDb.toFixed(1) + ' dB' : '-- dB';
-      document.getElementById('gammaVal').textContent = data.gammaDb ? data.gammaDb.toFixed(1) + ' dB' : '-- dB';
+      // Update value displays - show % for Bluetooth, dB for OSC
+      const unit = data.isRelative ? '%' : ' dB';
+      const precision = data.isRelative ? 0 : 1;
+      document.getElementById('deltaVal').textContent = data.deltaDb ? data.deltaDb.toFixed(precision) + unit : '--';
+      document.getElementById('thetaVal').textContent = data.thetaDb ? data.thetaDb.toFixed(precision) + unit : '--';
+      document.getElementById('alphaVal').textContent = data.alphaDb ? data.alphaDb.toFixed(precision) + unit : '--';
+      document.getElementById('betaVal').textContent = data.betaDb ? data.betaDb.toFixed(precision) + unit : '--';
+      document.getElementById('gammaVal').textContent = data.gammaDb ? data.gammaDb.toFixed(precision) + unit : '--';
       
       // Update therapy mode
       let coherence = 0;

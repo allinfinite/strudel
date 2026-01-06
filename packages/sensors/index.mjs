@@ -5,7 +5,7 @@ export * from './webcam.mjs';
 export * from './audio-input.mjs';
 export * from './ml-vision.mjs';
 
-// Muse 2 EEG brainwave integration (via Mind Monitor OSC)
+// Muse EEG brainwave integration (Direct Bluetooth + Mind Monitor OSC)
 export * from './muse.mjs';
 
 // Bass therapy engine for vibra-acoustic applications

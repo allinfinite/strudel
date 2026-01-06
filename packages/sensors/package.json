@@ -39,6 +39,7 @@
   "dependencies": {
     "@strudel/core": "workspace:*",
     "superdough": "workspace:*",
+    "muse-js": "^3.3.0",
     "osc-js": "^2.4.1"
   },
   "devDependencies": {
