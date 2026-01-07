@@ -3123,8 +3123,14 @@
       // ========== REWARD MODE ==========
       
       startReward() {
-        this.rewardThreshold = 0.5;
-        this.rewardFreq = 45;
+        // Read threshold from slider instead of hard-coding (slider value is 20-90, convert to 0.2-0.9)
+        const thresholdSlider = document.getElementById('rewardThreshold');
+        this.rewardThreshold = thresholdSlider ? parseFloat(thresholdSlider.value) / 100 : 0.5;
+        
+        // Read frequency from slider instead of hard-coding
+        const freqSlider = document.getElementById('rewardFreq');
+        this.rewardFreq = freqSlider ? parseFloat(freqSlider.value) : 45;
+        
         this.rewardVoicing = 'minor';
         this.rewardOscs = [];
         this.rewardGains = [];
