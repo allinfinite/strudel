@@ -2418,13 +2418,27 @@
         
         for (const band in bandPowers) bandPowers[band] /= validChannels;
         
-        // Apply simple correction: boost higher frequencies which are naturally weaker
-        // This helps balance the display (raw EEG power drops off at ~1/f)
-        bandPowers.theta *= 1.5;
-        bandPowers.alpha *= 2.0;
-        bandPowers.beta *= 3.0;
-        bandPowers.gamma *= 4.0;
+        // Apply 1/f² compensation based on center frequency of each band
+        // Raw EEG power follows ~1/f², so higher frequencies are naturally much weaker
+        // Center frequencies: delta~2.5Hz, theta~6Hz, alpha~10.5Hz, beta~21.5Hz, gamma~37Hz
+        // Compensation = (centerFreq / deltaCenter)² 
+        const deltaCenter = 2.5;
+        bandPowers.delta *= 1;                                    // Reference (no boost)
+        bandPowers.theta *= Math.pow(6 / deltaCenter, 2);         // ~5.8x
+        bandPowers.alpha *= Math.pow(10.5 / deltaCenter, 2);      // ~17.6x
+        bandPowers.beta *= Math.pow(21.5 / deltaCenter, 2);       // ~74x
+        bandPowers.gamma *= Math.pow(37 / deltaCenter, 2);        // ~219x
         
+        // Convert to dB (10 * log10 of power, with small epsilon to avoid log(0))
+        // Reference level chosen so typical EEG gives reasonable dB values
+        const epsilon = 1e-10;
+        const refPower = 0.01; // Reference power level for 0 dB
+        const bandDb = {};
+        for (const band of ['delta', 'theta', 'alpha', 'beta', 'gamma']) {
+          bandDb[band] = 10 * Math.log10((bandPowers[band] + epsilon) / refPower);
+        }
+        
+        // Also compute normalized values (0-1) for internal use (reward mode, etc.)
         const totalPower = bandPowers.delta + bandPowers.theta + bandPowers.alpha + bandPowers.beta + bandPowers.gamma;
         
         if (totalPower > 0) {
@@ -2432,15 +2446,14 @@
           for (const band of ['delta', 'theta', 'alpha', 'beta', 'gamma']) {
             const normalized = bandPowers[band] / totalPower;
             this[band] = this[band] * s + normalized * (1 - s);
-            // For Bluetooth: show relative percentage instead of uncalibrated dB
-            // Store as percentage (0-100) in the Db field for display
-            this[band + 'Db'] = this[band] * 100;
+            // Store actual dB values
+            this[band + 'Db'] = this[band + 'Db'] * s + bandDb[band] * (1 - s);
           }
           
           this.onData?.({
             delta: this.delta, theta: this.theta, alpha: this.alpha, beta: this.beta, gamma: this.gamma,
             deltaDb: this.deltaDb, thetaDb: this.thetaDb, alphaDb: this.alphaDb, betaDb: this.betaDb, gammaDb: this.gammaDb,
-            isRelative: true // Flag to indicate these are percentages, not dB
+            isRelative: false // Now shows actual dB values
           });
         }
       }
