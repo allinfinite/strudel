@@ -3296,15 +3296,23 @@
           rewardVolume = (smoothedValue - threshold) / (1 - threshold);
           rewardVolume = Math.pow(rewardVolume, 0.5);
         }
+
+        // Map rewardVolume to qualitative states:
+        // 0.0 - below threshold      -> "active mind" (no reward)
+        // >0.0 and <flowGate        -> "settling in" / "getting there" (no reward yet)
+        // >= flowGate               -> true "flow state" (audio reward on)
+        const flowGate = 0.6;
+        const isFlowState = rewardVolume >= flowGate;
+        const audioVolume = isFlowState ? rewardVolume : 0;
         
         // Only update audio if oscillators are created
         if (this.rewardOscs && this.rewardOscs.length > 0 && this.ctx) {
-          const fadeTime = rewardVolume > (this._lastRewardVolume || 0) ? 0.4 : 0.8;
-          this._lastRewardVolume = rewardVolume;
+          const fadeTime = audioVolume > (this._lastRewardVolume || 0) ? 0.4 : 0.8;
+          this._lastRewardVolume = audioVolume;
           
           // Apply volumes with beautiful staggered bloom - high notes come in later
           this.rewardGains.forEach((gain, i) => {
-            const voiceVol = (this.voiceVolumes[i] || 0.1) * rewardVolume;
+            const voiceVol = (this.voiceVolumes[i] || 0.1) * audioVolume;
             // Stagger: bass first, then mids, then chimes bloom last for "aha" effect
             const stagger = i * 0.05;
             gain.gain.setTargetAtTime(voiceVol, this.ctx.currentTime + stagger, fadeTime);
@@ -3312,31 +3320,36 @@
           
           // Master volume - louder overall
           if (this.rewardMasterGain) {
-            this.rewardMasterGain.gain.setTargetAtTime(rewardVolume * 0.9, this.ctx.currentTime, fadeTime);
+            this.rewardMasterGain.gain.setTargetAtTime(audioVolume * 0.9, this.ctx.currentTime, fadeTime);
           }
           
           // Open filter wide as reward increases - let the chimes through!
           if (this.rewardFilter) {
-            const filterFreq = 800 + rewardVolume * 4000; // Opens up to 4800Hz
+            const filterFreq = 800 + audioVolume * 4000; // Opens up to 4800Hz
             this.rewardFilter.frequency.setTargetAtTime(filterFreq, this.ctx.currentTime, fadeTime * 0.3);
           }
           
           // Delay (reverb) increases with reward for ethereal quality
           if (this.delayGain) {
-            this.delayGain.gain.setTargetAtTime(rewardVolume * 0.4, this.ctx.currentTime, fadeTime);
+            this.delayGain.gain.setTargetAtTime(audioVolume * 0.4, this.ctx.currentTime, fadeTime);
           }
           
           // Shimmer speeds up slightly when enlightened
           if (this.shimmerLFO) {
-            this.shimmerLFO.frequency.setTargetAtTime(0.15 + rewardVolume * 0.3, this.ctx.currentTime, 0.5);
+            this.shimmerLFO.frequency.setTargetAtTime(0.15 + audioVolume * 0.3, this.ctx.currentTime, 0.5);
           }
           if (this.shimmerLFO2) {
-            this.shimmerLFO2.frequency.setTargetAtTime(0.3 + rewardVolume * 0.5, this.ctx.currentTime, 0.5);
+            this.shimmerLFO2.frequency.setTargetAtTime(0.3 + audioVolume * 0.5, this.ctx.currentTime, 0.5);
           }
         }
         
         // Always return values for UI display
-        return { targetValue: smoothedValue, threshold, rewardVolume, isRewarding: smoothedValue >= threshold };
+        return {
+          targetValue: smoothedValue,
+          threshold,
+          rewardVolume,
+          isRewarding: isFlowState
+        };
       }
       
       setRewardThreshold(threshold) {
